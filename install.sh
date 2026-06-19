@@ -87,5 +87,5 @@ done
 echo ""
 echo "=== 安装完成 ==="
 echo ""
-echo "验证: ls -la ~/.claude/skills/lp-*/SKILL.md"
-echo "测试: 在任意项目目录下输入 /lp-ms 测试需求"
+echo "验证: ls -la ~/.claude/skills/fw*/SKILL.md ~/.claude/skills/fwp*/SKILL.md"
+echo "测试: 在任意项目目录下输入 /fwp-plan 测试需求"

@@ -130,7 +130,7 @@ echo "☐ 脚本: scripts/watch-pr.sh, fw-ship-cleanup.sh, cleanup-merged-branch
 echo "☐ Git hook: .git/hooks/commit-msg → scripts/commit-msg"
 echo "☐ pyproject.toml  +  .gitignore  +  CLAUDE.md"
 echo ""
-echo "飞轮 skills 已全局安装 (~/.claude/skills/lp-*/)，当前项目可直接使用:"
+echo "飞轮 skills 已全局安装，当前项目可直接使用:"
 echo "  /fwp-plan <需求描述>"
 echo "  /fwp-ship <issue-number>"
 echo "  /fwp-build <issue-number>"

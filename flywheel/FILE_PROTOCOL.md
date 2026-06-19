@@ -13,15 +13,15 @@
 ## 文件格式
 
 ### milestone-<finding-id>.md
-**生产者**: lp-up, lp-dp
-**消费者**: lp-ms
+**生产者**: fwp-inspect, fw-audit
+**消费者**: fwp-plan
 
 ```markdown
-# [lp-up][ARCHITECTURE] 内存泄漏：RSS 7 日增长 +320MB
+# [fwp-inspect][ARCHITECTURE] 内存泄漏：RSS 7 日增长 +320MB
 
 | 字段 | 值 |
 |------|-----|
-| 来源 | lp-up Round 3 |
+| 来源 | fwp-inspect Round 3 |
 | 严重度 | CRITICAL |
 | 类别 | ARCHITECTURE |
 | 证据 | RSS 7 日斜率 +45MB/天，monitoring_samples 30 天数据 |
@@ -31,8 +31,8 @@
 ```
 
 ### ctx-<issue-number>.md
-**生产者**: lp-mr
-**消费者**: lp-dev
+**生产者**: fwp-ship
+**消费者**: fwp-build
 
 ```markdown
 # Issue #42 开发上下文
@@ -59,8 +59,8 @@ fix_round > 0 时：
 ```
 
 ### ci-<mr-number>.md
-**生产者**: lp-mr
-**消费者**: lp-dev (仅 --fix 模式)
+**生产者**: fwp-ship
+**消费者**: fwp-build (仅 --fix 模式)
 
 ```markdown
 # MR #58 CI 失败日志
@@ -77,8 +77,8 @@ fix_round > 0 时：
 ```
 
 ### result-<issue-number>.md
-**生产者**: lp-dev
-**消费者**: lp-mr
+**生产者**: fwp-build
+**消费者**: fwp-ship
 
 ```markdown
 # Issue #42 开发结果
@@ -108,7 +108,7 @@ fix_round > 0 时：
 4. 消费者: 执行任务
 5. 消费者: Write 结果到 /tmp/fw-flywheel/$PROJECT/result-<N>.md + HANDOFF
 6. 生产者: Read /tmp/fw-flywheel/$PROJECT/result-<N>.md
-7. lp-mr cleanup: rm /tmp/fw-flywheel/$PROJECT/{ctx,ci,result}-<N>.md
+7. fwp-ship cleanup: rm /tmp/fw-flywheel/$PROJECT/{ctx,ci,result}-<N>.md
 ```
 
 ## 截断规则
