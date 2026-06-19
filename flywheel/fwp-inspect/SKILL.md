@@ -25,11 +25,11 @@ echo "[fwp-inspect] CLI=$CLI LOG_DIR=$LOG_DIR DB=$DB_PATH"
 ## 调用方式
 
 ```text
-/fwp-inspect                      # 纯巡检（只查历史数据）
-/fwp-inspect --run quick          # 执行引擎 quick + 巡检
-/fwp-inspect --run full           # 执行引擎 full + 巡检
-/fwp-inspect --resume             # 中断恢复
+/fwp-inspect                 # 执行 8 项巡检（能做就做，不能就 SKIP）
+/fwp-inspect --resume        # 中断恢复
 ```
+
+无模式切换——始终执行全部 8 项检查。有数据就查数据，有 CLI 就测 CLI，不区分"纯分析"和"执行"模式。
 
 ## 8 条固定检查项
 
@@ -153,40 +153,48 @@ else echo "SKIP: 无数据库或非交易日"; fi
 
 ---
 
-### 7. EXIT-CODE — 引擎命令退出码（仅 --run）
+### 7. EXIT-CODE — CLI 可用性
 
 ```bash
-if [ "${1:-}" = "--run" ]; then
-  cd "$(git rev-parse --show-toplevel)"
-  CLI=$(awk '/\[project\.scripts\]/{f=1;next} f&&/=/ {print $1;exit}' pyproject.toml 2>/dev/null)
-  if $CLI --help >/dev/null 2>&1; then echo "PASS: CLI 可用"
-  else echo "FAIL: CLI 不可用"; fi
-else echo "SKIP: 非 --run 模式"; fi
+cd "$(git rev-parse --show-toplevel)"
+CLI=$(awk '/\[project\.scripts\]/{f=1;next} f&&/=/ {print $1;exit}' pyproject.toml 2>/dev/null)
+if [ -z "$CLI" ]; then echo "SKIP: 无 CLI 定义"
+elif $CLI --help >/dev/null 2>&1; then echo "PASS: CLI 可用"
+else echo "FAIL: CLI 不可用 ($CLI --help 失败)"; fi
 ```
 
 ---
 
-### 8. RSS-DELTA — 单次内存增量（仅 --run）
+### 8. RSS-DELTA — 单次内存增量
 
 ```bash
-if [ "${1:-}" = "--run" ]; then
-  DELTA=$(cat /tmp/fw-flywheel/$PROJECT/rss_delta 2>/dev/null || echo "0")
-  if [ "$(echo "$DELTA > 200"|bc -l 2>/dev/null)" = "1" ]; then
-    echo "WARN: 单次 RSS 增量 ${DELTA}MB"; else echo "PASS: ${DELTA}MB (阈值 200)"; fi
-else echo "SKIP: 非 --run 模式"; fi
+cd "$(git rev-parse --show-toplevel)"
+CLI=$(awk '/\[project\.scripts\]/{f=1;next} f&&/=/ {print $1;exit}' pyproject.toml 2>/dev/null)
+if [ -z "$CLI" ]; then echo "SKIP: 无 CLI"
+else
+  DELTA=$(python -c "
+import psutil, os, subprocess
+pid = os.getpid()
+before = psutil.Process(pid).memory_info().rss / 1024**2
+subprocess.run('$CLI --help', shell=True, capture_output=True)
+after = psutil.Process(pid).memory_info().rss / 1024**2
+print(round(after - before, 1))
+" 2>/dev/null || echo "SKIP")
+  if [ "$DELTA" = "SKIP" ]; then echo "SKIP: psutil 不可用"
+  elif [ "$(echo "$DELTA > 200" | bc -l 2>/dev/null)" = "1" ]; then
+    echo "WARN: RSS 增量 ${DELTA}MB (阈值 200)"
+  else echo "PASS: ${DELTA}MB (阈值 200)"; fi
+fi
 ```
 
 ---
 
 ## 执行流程
 
-### 1. (可选) 执行引擎
-`--run quick/full` 时运行引擎命令，同时采集 RSS delta 写入 `/tmp/fw-flywheel/$PROJECT/rss_delta`。
-
-### 2. 逐条执行 8 项检查
+### 1. 逐条执行 8 项检查
 按编号顺序，每条输出一行结论。
 
-### 3. 汇总报告
+### 2. 汇总报告
 
 ```text
 ## FW-INSPECT 巡检报告 — Round <N>
@@ -199,8 +207,8 @@ else echo "SKIP: 非 --run 模式"; fi
 | 4 | PIPELINE  | SKIP   | 无数据 |
 | 5 | HEALTH    | SKIP   | 无数据 |
 | 6 | SCHEDULER | PASS   | 今日 144 条 |
-| 7 | EXIT-CODE | SKIP   | 非 --run |
-| 8 | RSS-DELTA | SKIP   | 非 --run |
+| 7 | EXIT-CODE | SKIP   | 无 CLI |
+| 8 | RSS-DELTA | SKIP   | 无 CLI |
 
 FAIL:1  WARN:0  SKIP:4  PASS:3
 ```
@@ -210,7 +218,7 @@ FAIL:1  WARN:0  SKIP:4  PASS:3
 每项 FAIL/WARN 生成 milestone 文件并通过 subagent 派发：
 
 ```bash
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 cat > "/tmp/fw-flywheel/$PROJECT/milestone-${CHECK_ID}.md" << EOF
 # [fwp-inspect][${CHECK_ID}] ${TITLE}
 
