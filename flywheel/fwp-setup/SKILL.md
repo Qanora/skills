@@ -137,6 +137,15 @@ chmod +x scripts/*
 
 创建 `pyproject.toml`（ruff + pytest + uv）、`.gitignore`（Python + IDE + Data）、`CLAUDE.md`（飞轮表 + git 规范 + scripts 索引）。
 
+**安装权限模板**（消除 dontAsk 模式下的权限暂停）：
+
+```bash
+mkdir -p .claude
+cp ~/.claude/skills/fwp-setup/templates/settings.local.json .claude/
+```
+
+覆盖飞轮所有操作：git/gh/state/tmp/skill/bash 工具链，`defaultMode: "dontAsk"`。
+
 ### 阶段 9：验证 + 安装 git hook
 
 ```bash

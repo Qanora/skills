@@ -76,6 +76,18 @@
 
 当你调用 `/fw-audit`，会审计飞轮自身的安全治理（门禁是否齐全、约束是否有效、AI 是否有非预期行为、信息传递是否通畅、效率是否达标），发现漏洞自动修复。
 
+## 权限配置（避免 dontAsk 模式暂停）
+
+如果飞轮操作频繁因权限不足而暂停，将权限模板复制到项目：
+
+```bash
+cp ~/.claude/skills/fwp-setup/templates/settings.local.json .claude/
+```
+
+覆盖所有飞轮操作（git/gh/state/tmp/skill/bash），`defaultMode: "dontAsk"`。
+
+> 新项目 `fwp-setup` 会自动安装此模板。
+
 ## 多项目同时使用
 
 状态（`.claude/state/`）、临时文件（`/tmp/fw-flywheel/$PROJECT/`）、数据目录（`~/.$PROJECT/`）全部按项目隔离，互不干扰。
