@@ -104,11 +104,41 @@ DFS 检测环。若发现环**立即停止**：
 
 ### 5. 派发执行
 
-批次内 **串行执行**，每个 issue 依次交给第二层：
+批次内 **串行执行**，每个 issue 通过 subagent 交给第二层（完全隔离，不累积上下文）：
+
+```bash
+# 写 issue 上下文文件
+mkdir -p /tmp/lp-flywheel
+cat > "/tmp/lp-flywheel/ctx-<N>.md" << EOF
+# Issue #<N>
+
+| 字段 | 值 |
+|------|-----|
+| issue | #<N> |
+| milestone | #<M> |
+| 依赖 | <依赖 issue 列表> |
+EOF
+```
 
 ```text
-/lp-mr <issue-number>
+Agent(subagent_type="general-purpose", description="MR issue #<N>",
+  prompt="/lp-mr <N>
+
+上下文: /tmp/lp-flywheel/ctx-<N>.md")
 ```
+
+subagent 退出后，读取状态文件判断结果：
+
+```bash
+STATUS=$(cat "/tmp/lp-flywheel/status-<N>.md" 2>/dev/null | grep "状态" | sed 's/.*| //;s/ |.*//')
+case "$STATUS" in
+  MERGED)     echo "[lp-ms] #<N> 已合入 ✓" ;;
+  BLOCKED_CI) echo "[lp-ms] #<N> CI 阻塞，fix_round 超限，需人工介入" && break ;;
+  *)          echo "[lp-ms] #<N> 异常: $STATUS" && break ;;
+esac
+```
+
+状态正常（MERGED）→ 继续下一个 issue；异常 → 停止批次，记录到 milestone comment。
 
 ### 6. 查看进度
 
@@ -186,8 +216,8 @@ gh api -X PATCH "repos/$REPO/milestones/<N>" -f state=closed
 
 | Issue 状态 | MR 状态 | 恢复动作 |
 |-----------|---------|---------|
-| open, 无 MR | — | 启动 `/lp-mr <issue>` |
-| open, 有 MR | CI_FAILURE | 收集 CI log → `/lp-mr --resume` |
+| open, 无 MR | — | 启动 subagent: `/lp-mr <issue>` |
+| open, 有 MR | CI_FAILURE | 收集 CI log → subagent: `/lp-mr --resume` |
 | open, 有 MR | PENDING | 继续监控 (`watch-pr.sh`) |
 | closed | MR merged | 跳过 |
 | closed | 无 MR | 跳过 |

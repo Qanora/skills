@@ -4,15 +4,13 @@
 
 ---
 
-## 传递拓扑
+## 传递拓扑（全部 subagent 隔离）
 
 ```
-lp-up ──① milestone 描述 → lp-ms ──② issue 编号 → lp-mr ──③ prompt → lp-dev ──⑥ HANDOFF → lp-mr
-lp-dp ──① milestone 描述 → lp-ms                                                    │
-                                                                                    ⑦ /simplify → Agent(claude)
-                                                                                    │
-                                                                                    ▼
-                                                                               simplify
+lp-up ──① milestone 文件 → lp-ms ──② ctx 文件 → lp-mr ──③ ctx 文件 → lp-dev ──⑥ HANDOFF + result 文件 → lp-mr
+lp-dp ──① milestone 文件 → lp-ms                                                       │
+                                 ② status 文件 ↩ (回传)                                 ④ ci 文件 (fix 模式)
+                                                                                       ⑦ diff 文件 → simplify
 ```
 
 ---
@@ -57,12 +55,7 @@ lp-dp ──① milestone 描述 → lp-ms                                      
 
 **数据量**：传入参数极简（一个 int）。但 lp-mr 通过 gh 重新拉取 issue body。
 
-**评估**：⚠️ 传入参数极简是好的，但**同会话调用是关键缺陷**：
-- 多个 issue 串行执行时，每个 lp-mr 的 git/CI/分支操作上下文会**持续累积**
-- 批次 3 个 issue → context 里有 3 轮 lp-mr 的完整执行记录
-- lp-ms 自身不感知 issue 执行进度——它依赖于同会话的 lp-mr 输出来判断成功/失败
-
-**改进方向**：lp-ms → lp-mr 也改为 subagent，通过 state 文件（`.claude/state/issue-<N>.status`）回传结果。
+**评估**：✅ **已修复**。lp-ms → lp-mr 改为 subagent 调用。lp-ms 写 `ctx-<N>.md` → Agent(lp-mr) → lp-mr 结束时写 `status-<N>.md` → lp-ms 读取判断是否继续下一个 issue。
 
 ---
 
@@ -210,31 +203,30 @@ SUMMARY=添加 trace buffer 释放逻辑，修复 collector 内存泄漏
 
 ## 总结矩阵
 
-| 通道 | 调用方式 | 数据量 | 隔离 | 问题 |
+| 通道 | 调用方式 | 数据量 | 隔离 | 状态 |
 |------|---------|--------|------|------|
-| ① lp-up/lp-dp → lp-ms | subagent | ~300B | ✅ | — |
-| ② lp-ms → lp-mr | **同会话 skill** | 1 个 int | ❌ | 批次串行 context 累积 |
-| ③ lp-mr → lp-dev (dev) | subagent | ~100B | ✅ | general-purpose 类型不匹配 |
-| ④ lp-mr → lp-dev (fix) | subagent | ~500-5000B | ✅ | CI log 可能超大 |
-| ⑤ 元数据传递 | **缺失** | 0 | — | lp-dev 不知道 fix_round/历史改动 |
-| ⑥ lp-dev → lp-mr | HANDOFF 信号 | ~50B | ✅ | 缺少改动摘要/失败详情 |
-| ⑦ lp-dev → simplify | subagent | ~30B | ✅ | — |
+| ① lp-up/lp-dp → lp-ms | subagent + milestone 文件 | ~300B | ✅ | ✅ |
+| ② lp-ms → lp-mr | **subagent + status 文件** | ctx 文件 | ✅ | ✅ 已斩断 |
+| ③ lp-mr → lp-dev (dev) | subagent + ctx 文件 | ~200B | ✅ | ✅ |
+| ④ lp-mr → lp-dev (fix) | subagent + ci 文件 | ≤200 行 | ✅ | ✅ 已截断 |
+| ⑤ 元数据传递 | ctx 文件 | ~200B | ✅ | ✅ 已包含 fix_round |
+| ⑥ lp-dev → lp-mr | HANDOFF + result 文件 | ~50B + 200B | ✅ | ✅ 含改动摘要 |
+| ⑦ lp-dev → simplify | subagent + diff 文件 | diff 文件 | ✅ | ✅ |
 
-## Token 风险排名
+## Token 风险排名（修复后）
 
 ```
-🔴 通道 ④ — CI log 直接塞 prompt（可能 > 10KB）
-🟡 通道 ② — 同会话串行累积（3 个 issue ≈ 3× lp-mr context）
-🟡 通道 ⑤ — 缺失元数据导致 lp-dev 盲目修复、重复改动
-🟢 通道 ①⑥⑦ — 设计良好，数据量可控
+🟢 通道 ①⑥⑦ — 设计良好，Prompt 永远 ~80 字节
+🟢 通道 ② — 已斩断：subagent + status-<N>.md 回传
+🟢 通道 ③④⑤ — 已修复：ctx/ci/result 文件协议
 ```
+
+**全部 7 个通道现在都是 subagent 隔离 + 文件传递。Prompt 不再承载数据。**
 
 ## 关键发现
 
-1. **HANDOFF 是设计最好的接口** — 极简、结构化、可解析。应作为跨层通信的唯一标准格式。
+1. **HANDOFF + 文件双通道是最佳模式** — HANDOFF 传控制信号（~50B），文件传数据（≤200 行），各司其职。
 
-2. **自我拉取模式是正确的** — lp-dev 自己 `gh issue view`、lp-mr 自己检测上下文。避免了跨层传递大段数据。
+2. **lp-ms → lp-mr 已斩断** — 飞轮中最后一条同会话调用链路已消除。lp-ms 通过 `status-<N>.md` 判断 issue 完成状态，保持串行依赖的同时实现完全隔离。
 
-3. **通道 ② 的同会话调用是刻意的** — 为了保证串行依赖。但这意味着 lp-ms 必须感知所有下层操作的成败。改为 subagent + state 文件模式可以同时保持串行和隔离。
-
-4. **没有一处使用了 `subagent_type="lp-dev"`** — 因为 lp-dev 不是注册的 subagent type（它只是一个 skill）。lp-mr 用 `general-purpose` 然后 prompt 里写 `/lp-dev`，是 workaround。
+3. **`general-purpose` 是合理的 workaround** — lp-dev 和 lp-mr 作为 skill 没有独立的 subagent type。通过 `general-purpose` + `/lp-xx` prompt 是正确的调用方式。

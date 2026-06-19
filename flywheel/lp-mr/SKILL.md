@@ -267,12 +267,23 @@ git branch -D feature/issue-<N> 2>/dev/null || true
 mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
-# 清理 /tmp/lp-flywheel 临时文件
+# 写入 lp-ms 可读的状态文件
+mkdir -p /tmp/lp-flywheel
+cat > "/tmp/lp-flywheel/status-<N>.md" << 'EOF'
+# Issue #<N> 最终状态
+
+| 字段 | 值 |
+|------|-----|
+| 状态 | MERGED |
+| MR | #<mr-number> |
+| 改动摘要 | $(cat /tmp/lp-flywheel/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
+EOF
+# 清理 /tmp/lp-flywheel 临时文件（保留 status 供 lp-ms 读取）
 rm -f "/tmp/lp-flywheel/ctx-<N>.md" \
       "/tmp/lp-flywheel/ci-<mr-number>.md" \
       "/tmp/lp-flywheel/result-<N>.md" \
       "/tmp/lp-flywheel/diff-<N>.md"
-echo "[CLEANUP] /tmp/lp-flywheel/issue-<N> 临时文件已清理"
+echo "[CLEANUP] /tmp/lp-flywheel/ 上下文文件已清理（status-<N>.md 保留供 lp-ms 读取）"
 ```
 
 ## 错误处理
@@ -284,3 +295,18 @@ echo "[CLEANUP] /tmp/lp-flywheel/issue-<N> 临时文件已清理"
 | SIMPLIFY_UNFIXABLE | simplify 无法自动修复 | 人工介入，记录到 issue |
 | CONFLICT_UNRESOLVABLE | merge conflict 无法解决 | 写 `CONFLICT`，人工介入 |
 | UNKNOWN | 其他异常 | 记录日志，人工介入 |
+
+所有异常状态**同时写入 status 文件**供 lp-ms 读取：
+
+```bash
+# BLOCKED_CI / CONFLICT / ABANDONED 时写入
+mkdir -p /tmp/lp-flywheel
+cat > "/tmp/lp-flywheel/status-<N>.md" << EOF
+# Issue #<N> 最终状态
+
+| 字段 | 值 |
+|------|-----|
+| 状态 | <BLOCKED_CI | CONFLICT | ABANDONED> |
+| 详情 | <原因描述> |
+EOF
+```
