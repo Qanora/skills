@@ -18,6 +18,17 @@ DEFAULT_BRANCH=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null |
 echo "[lp-ms] WORKSPACE=$WORKSPACE BRANCH=$DEFAULT_BRANCH"
 ```
 
+**从文件读取 milestone**（由 lp-up 或 lp-dp 写入）：
+
+```bash
+# 查找是否有待处理的 milestone 文件
+ls /tmp/lp-flywheel/milestone-*.md 2>/dev/null && \
+  echo "[lp-ms] 发现 milestone 文件:" && \
+  cat /tmp/lp-flywheel/milestone-*.md
+```
+
+若存在 `/tmp/lp-flywheel/milestone-*.md`，以此作为需求来源；否则使用用户直接输入的 `<需求描述>`。
+
 ## 调用方式
 
 ```text
@@ -29,7 +40,7 @@ echo "[lp-ms] WORKSPACE=$WORKSPACE BRANCH=$DEFAULT_BRANCH"
 
 ### 1. 分析需求
 
-分析需求范围和边界。
+优先读取 `/tmp/lp-flywheel/milestone-*.md`，若存在则使用文件中的结构化需求；否则分析用户直接输入的 `<需求描述>`。
 
 ### 2. 拆解 Issue
 

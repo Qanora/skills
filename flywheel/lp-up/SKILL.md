@@ -217,20 +217,33 @@ find "$HOME/.$PROJECT/data/" -name "*.parquet" -type f 2>/dev/null | head -20
 | INFO | 记录到 findings.json；同一 INFO 连续 3 轮未消除 → 自动升级 WARNING 并派发 |
 | INFO 积压 > 20 条 | 每轮强制升级 1 条最老的 INFO |
 
-```text
-Agent(description: "lp-ms: <简述>", subagent_type: "lp-ms",
-  prompt: "[lp-up][<类别>] <简述>
+**派发前先写 milestone 文件**：
 
-**来源**: lp-up Round <N> 分析报告
-**严重度**: CRITICAL | WARNING | INFO
-**类别**: ARCHITECTURE | IMPLEMENTATION | ALGORITHM
-**证据摘要**: <关键数据点>
-**根因假设**: <分析判断>
-**预期收益**: <修复后的改善>
-**建议范围**: <涉及模块/文件>")
+```bash
+mkdir -p /tmp/lp-flywheel
+cat > "/tmp/lp-flywheel/milestone-<finding-id>.md" << 'EOF'
+# [lp-up][<类别>] <简述>
+
+| 字段 | 值 |
+|------|-----|
+| 来源 | lp-up Round <N> |
+| 严重度 | CRITICAL | WARNING | INFO |
+| 类别 | ARCHITECTURE | IMPLEMENTATION | ALGORITHM |
+| 证据摘要 | <关键数据点> |
+| 根因假设 | <分析判断> |
+| 预期收益 | <修复后的改善> |
+| 建议范围 | <涉及模块/文件> |
+EOF
 ```
 
-串行派发：CRITICAL → WARNING → INFO 老化升级。
+然后通过 subagent 启动 lp-ms（prompt 只传文件路径）：
+
+```text
+Agent(description: "lp-ms: <简述>", subagent_type: "lp-ms",
+  prompt: "milestone 文件: /tmp/lp-flywheel/milestone-<finding-id>.md")
+```
+
+串行派发：CRITICAL → WARNING → INFO 老化升级。每个 milestone 完成后清理对应文件。
 
 ### 阶段 G：状态持久化
 

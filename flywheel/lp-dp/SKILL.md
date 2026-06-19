@@ -174,14 +174,25 @@ ls "$HOME/.$PROJECT/reports/lp-up-"*.md 2>/dev/null && head -200 "$HOME/.$PROJEC
 
 **低分自动派发**：评分触发规则自动生成 DESIGN milestone 并派发，不询问用户。
 
+派发前先写 milestone 文件：
+
+```bash
+mkdir -p /tmp/lp-flywheel
+cat > "/tmp/lp-flywheel/milestone-<finding-id>.md" << 'EOF'
+# [lp-dp][DESIGN] lp-mr 健康度连续 2 轮评分 C+，需优化
+
+| 字段 | 值 |
+|------|-----|
+| 来源 | lp-dp 审计报告 |
+| 评分趋势 | C+ → C+ |
+| 主要失分项 | 流程符合度 80%、自动化率 60% |
+| 建议方向 | 强化步骤检查点；合并 cleanup 为单一脚本 |
+EOF
+```
+
 ```text
 Agent(description: "lp-ms: <简述>", subagent_type: "lp-ms",
-  prompt: "[lp-dp][DESIGN] lp-mr 健康度连续 2 轮评分 C+，需优化
-
-**来源**: lp-dp 审计报告
-**评分趋势**: C+ → C+
-**主要失分项**: 流程符合度 80%（跳过监控步骤）、自动化率 60%（手动 cleanup）
-**建议方向**: 强化步骤检查点；合并 cleanup 为单一脚本")
+  prompt: "milestone 文件: /tmp/lp-flywheel/milestone-<finding-id>.md")
 ```
 
 ### 6. 状态持久化

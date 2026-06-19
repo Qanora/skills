@@ -50,18 +50,42 @@ git checkout -b feature/issue-<N>
 
 > **规则**：feature 分支**只能**从 `origin/<默认分支>` 创建，禁止从其他 feature 分支派生。
 
-**1b. 通过 subagent 调用第三层**：
+**1b. 写入上下文文件 + 通过 subagent 调用第三层**：
+
+```bash
+# 写入开发上下文文件（供 lp-dev 读取）
+mkdir -p /tmp/lp-flywheel
+FIX_ROUND=$(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0)
+cat > "/tmp/lp-flywheel/ctx-<N>.md" << EOF
+# Issue #<N> 开发上下文
+
+| 字段 | 值 |
+|------|-----|
+| issue | #<N> |
+| 分支 | feature/issue-<N> |
+| 基址 | origin/$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo master) |
+| fix_round | $FIX_ROUND |
+$(if [ "$FIX_ROUND" -gt 0 ]; then echo "| 上次 commit | $(git log -1 --format='%h (%s)') |"; fi)
+$(if [ "$FIX_ROUND" -gt 0 ]; then echo "| 上次改动 | $(git diff --stat HEAD~1 | tail -1) |"; fi)
+
+## Issue 内容
+
+$(gh issue view <N> 2>/dev/null || echo "(无法获取)")
+EOF
+```
 
 ```text
 Agent(subagent_type="general-purpose", description="Dev issue #<N>",
   prompt="/lp-dev <N>
 
-当前开发分支：feature/issue-<N>（已从 origin/<默认分支> 创建）。请在此分支上开发，不要切回主分支。")
+上下文文件: /tmp/lp-flywheel/ctx-<N>.md
+分支: feature/issue-<N>（已从 origin/<默认分支> 创建）。请在此分支上开发，不要切回主分支。")
 ```
 
-subagent 退出后，检查终端输出中的 `---HANDOFF---` ... `---HANDOFF_END---` 信号块：
-- `DEV_DONE=<branch>` → 继续步骤 2
-- `FAIL_DONE=<error-type>` → 按错误处理章节处理
+subagent 退出后：
+1. 检查终端输出中的 `---HANDOFF---` ... `---HANDOFF_END---` 信号块
+2. 读取 `/tmp/lp-flywheel/result-<N>.md` 获取改动摘要
+3. `DEV_DONE=<branch>` → 继续步骤 2；`FAIL_DONE=<error-type>` → 错误处理
 
 ### 2. commit + push + 创建 MR
 
@@ -115,27 +139,52 @@ fi
 
 ### 5. 收集 CI 日志 + 分配修复
 
-拉取 CI 失败日志并递增 fix_round：
+拉取 CI 失败日志，**写入文件**（截断 ≤ 200 行），递增 fix_round：
 
 ```bash
-gh pr view <mr-number> --json statusCheckRollup --jq '
-  [.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion == "FAILURE" or .conclusion == "TIMED_OUT"))] |
+mkdir -p /tmp/lp-flywheel
+FIX_ROUND=$(( $(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0) + 1 ))
+echo "$FIX_ROUND" > .claude/state/issue-<N>.fix_round
+
+# 拉取 CI 失败详情
+FAILING=$(gh pr view <mr-number> --json statusCheckRollup --jq '
+  [.statusCheckRollup[] | select(.status == "COMPLETED" and
+    (.conclusion == "FAILURE" or .conclusion == "TIMED_OUT"))] |
   .[] | "\(.name): \(.conclusion)"
-'
-echo $((fix_round + 1)) > .claude/state/issue-<N>.fix_round
+')
+
+# 写入 CI 文件（截断保护：≤200 行）
+LINES=$(echo "$FAILING" | wc -l)
+if [ "$LINES" -gt 200 ]; then
+  echo "$FAILING" | head -100 > "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "" >> "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "... (省略 $((LINES - 200)) 行) ..." >> "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "" >> "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" | tail -50 >> "/tmp/lp-flywheel/ci-<mr-number>.md"
+else
+  echo "$FAILING" > "/tmp/lp-flywheel/ci-<mr-number>.md"
+fi
+
+# 更新上下文文件附加 fix_round 信息
+cat >> "/tmp/lp-flywheel/ctx-<N>.md" << EOF
+
+## CI 修复轮次 $FIX_ROUND/3
+
+CI 失败详情见 /tmp/lp-flywheel/ci-<mr-number>.md
+EOF
 ```
 
-通过 subagent 调用修复：
+通过 subagent 调用修复（prompt 只传文件路径，不传 CI log）：
 
 ```text
 Agent(subagent_type="general-purpose", description="Fix MR #<mr>",
   prompt="/lp-dev <N> --fix <mr-number>
 
-## CI 失败
-<CI log>")
+上下文: /tmp/lp-flywheel/ctx-<N>.md
+CI 日志: /tmp/lp-flywheel/ci-<mr-number>.md")
 ```
 
-等待 `FIX_DONE=<BRANCH>` 信号后进入步骤 6。
+等待 `FIX_DONE=<BRANCH>` 信号 + 读取 `/tmp/lp-flywheel/result-<N>.md`，进入步骤 6。
 
 ### 6. commit fix + push 同一分支
 
@@ -200,7 +249,7 @@ PR_STATE=$(gh pr view "$PR_NUMBER" --json state,statusCheckRollup --jq '{state, 
 
 ### 清理流程
 
-MR merged 后执行（使用脚本或内联）：
+MR merged 后执行（分支清理 + 状态写入 + **临时文件清理**）：
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -218,6 +267,12 @@ git branch -D feature/issue-<N> 2>/dev/null || true
 mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
+# 清理 /tmp/lp-flywheel 临时文件
+rm -f "/tmp/lp-flywheel/ctx-<N>.md" \
+      "/tmp/lp-flywheel/ci-<mr-number>.md" \
+      "/tmp/lp-flywheel/result-<N>.md" \
+      "/tmp/lp-flywheel/diff-<N>.md"
+echo "[CLEANUP] /tmp/lp-flywheel/issue-<N> 临时文件已清理"
 ```
 
 ## 错误处理
