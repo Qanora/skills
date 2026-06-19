@@ -69,11 +69,25 @@ sed -i "s/3\.11/${PYTHON_VERSION}/g" .github/workflows/test.yml
 
 ### 阶段 4：代码质量工具
 
-创建 `.coderabbit.yaml`、`.gitleaks.toml`、`.github/dependabot.yml`。
+从模板复制：
+
+```bash
+cp ~/.claude/skills/fwp-setup/templates/.coderabbit.yaml .
+cp ~/.claude/skills/fwp-setup/templates/.gitleaks.toml .
+mkdir -p .github
+cp ~/.claude/skills/fwp-setup/templates/dependabot.yml .github/
+```
 
 ### 阶段 5：模板
 
-创建 `.github/PULL_REQUEST_TEMPLATE.md`、`.github/ISSUE_TEMPLATE/bug.yml`、`.github/ISSUE_TEMPLATE/enhancement.yml`。
+从模板复制：
+
+```bash
+cp ~/.claude/skills/fwp-setup/templates/PULL_REQUEST_TEMPLATE.md .github/
+mkdir -p .github/ISSUE_TEMPLATE
+cp ~/.claude/skills/fwp-setup/templates/.github/ISSUE_TEMPLATE/bug.yml .github/ISSUE_TEMPLATE/
+cp ~/.claude/skills/fwp-setup/templates/.github/ISSUE_TEMPLATE/enhancement.yml .github/ISSUE_TEMPLATE/
+```
 
 ### 阶段 6：Triage 标签
 

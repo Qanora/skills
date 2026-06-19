@@ -37,9 +37,19 @@ ls /tmp/fw-flywheel/$PROJECT/milestone-*.md 2>/dev/null && \
 
 ## 流程
 
-### 1. 分析需求
+### 1. 分析需求 + 去重
 
-优先读取 `/tmp/fw-flywheel/$PROJECT/milestone-*.md`，若存在则使用文件中的结构化需求；否则分析用户直接输入的 `<需求描述>`。
+优先读取 `/tmp/fw-flywheel/$PROJECT/milestone-*.md`，若不存在则使用用户输入。
+
+**去重检查**：在创建 issue 前，先搜索是否已有类似 issue：
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+# 搜索关键词相似的 open issue
+gh issue list --state open --limit 20 --json number,title | jq -r '.[] | "#\(.number) \(.title)"'
+```
+
+如果已有类似 issue → 告知用户，询问是否复用而非新建。
 
 ### 2. 拆解 Issue
 

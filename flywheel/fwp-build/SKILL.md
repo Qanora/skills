@@ -30,7 +30,7 @@ if [ -f "$CTX_FILE" ]; then
   cat "$CTX_FILE"
 fi
 
-# 读取 CI 失败日志（--fix 模式，若存在）
+# 读取 CI 失败日志（若存在 → 自动进入修复模式）
 CI_FILE="/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
 if [ -f "$CI_FILE" ]; then
   echo "[fwp-build] 读取 CI 日志: $CI_FILE"
@@ -38,15 +38,15 @@ if [ -f "$CI_FILE" ]; then
 fi
 ```
 
-fwp-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fwp-build 无需自己 `gh issue view`。
+fwp-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fwp-build 无需自己 gh issue view。自动检测: 有 ci-*.md → 修复模式, 无 → 开发模式。
 
 ## 调用方式
 
 ```text
-/fwp-build <issue-number> [--fix <mr-number>]
+/fwp-build <issue-number>
 ```
 
-## 开发模式 (无 `--fix` flag)
+## 开发模式
 
 ### 1. 获取需求
 
@@ -226,7 +226,7 @@ EOF
 
 ---
 
-## 修复模式 (`--fix <mr-number>`)
+## 修复模式（自动检测）
 
 由 `/fwp-ship` 调用。获取上下文→修复→验证→simplify→退出。**不 commit，不 push。**
 

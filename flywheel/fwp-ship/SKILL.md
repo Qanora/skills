@@ -179,7 +179,7 @@ EOF
 
 ```text
 Agent(subagent_type="general-purpose", description="Fix MR #<mr>",
-  prompt="/fwp-build <N> --fix <mr-number>
+  prompt="/fwp-build <N>
 
 上下文: /tmp/fw-flywheel/$PROJECT/ctx-<N>.md
 CI 日志: /tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md")
@@ -208,7 +208,7 @@ git push origin "$BRANCH"
 [开始] → 从 origin/<默认分支> 开分支 → /fwp-build → commit+push+mr create
     → watch-pr
         ├─ CI green → gh pr merge --squash → 切回主分支 → 删除本地分支 → [done]
-        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /fwp-build --fix → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
+        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /fwp-build → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
         │         └─ fix_round >= 3 → 写 BLOCKED_CI → [人工介入]
         └─ timeout → CI green → 合入; 否则 → 人工介入
 ```
@@ -217,13 +217,13 @@ git push origin "$BRANCH"
 
 | 计数器 | 上限 | 触发条件 | 超限状态 | 重置时机 |
 |--------|------|---------|---------|---------|
-| `fix_round` | 3 | CI-failure → fwp-build --fix | `BLOCKED_CI` | 修复成功 push 后 |
+| `fix_round` | 3 | CI-failure → fwp-build | `BLOCKED_CI` | 修复成功 push 后 |
 
 ## 约束
 
 - 负责**所有** git 操作和 gh 操作
 - **禁止直接修改代码**：所有代码修改必须通过 `/fwp-build` subagent 完成
-- **CI failure 交给 fwp-build**：调用 `/fwp-build <N> --fix` 修复
+- **CI failure 交给 fwp-build 修复
 - **feature 分支必须从 origin/<默认分支> 创建**（步骤 1a），禁止从其他分支派生
 - **禁止用户交互**：严禁 `AskUserQuestion`；分支/MR/CI/merge 全流程自动执行
 
