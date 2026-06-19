@@ -23,10 +23,8 @@ echo "[fwp-ship] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
 
 ```text
 /fwp-ship <issue-number>
-/fwp-ship <issue-number> --resume
 ```
 
-**`--resume`**: 从 GitHub 状态恢复。查询 PR 状态、fix_round，决定恢复动作。可恢复：`BLOCKED_CI` 且 `fix_round < 3`；不可恢复：`CONFLICT`、`API_ERROR`。
 
 ## 流程
 
@@ -54,7 +52,7 @@ git checkout -b feature/issue-<N>
 
 ```bash
 # 写入开发上下文文件（供 fwp-build 读取）
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 FIX_ROUND=$(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0)
 cat > "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
 # Issue #<N> 开发上下文
@@ -145,7 +143,7 @@ fi
 拉取 CI 失败日志，**写入文件**（截断 ≤ 200 行），递增 fix_round：
 
 ```bash
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 FIX_ROUND=$(( $(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0) + 1 ))
 echo "$FIX_ROUND" > .claude/state/issue-<N>.fix_round
 
@@ -238,7 +236,6 @@ git push origin "$BRANCH"
 | `.claude/state/issue-<N>.status` | `MERGED` / `BLOCKED_CI` / `CONFLICT` / `ABANDONED` / `API_ERROR` |
 | `.claude/state/issue-<N>.fix_round` | CI 修复重试计数 |
 
-### --resume 逻辑
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -271,7 +268,7 @@ mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
 # 写入 fwp-plan 可读的状态文件
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << 'EOF'
 # Issue #<N> 最终状态
 
@@ -303,7 +300,7 @@ echo "[CLEANUP] /tmp/fw-flywheel/$PROJECT/ 上下文文件已清理（status-<N>
 
 ```bash
 # BLOCKED_CI / CONFLICT / ABANDONED 时写入
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << EOF
 # Issue #<N> 最终状态
 

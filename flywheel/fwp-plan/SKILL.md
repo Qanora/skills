@@ -33,7 +33,6 @@ ls /tmp/fw-flywheel/$PROJECT/milestone-*.md 2>/dev/null && \
 
 ```text
 /fwp-plan <需求描述>
-/fwp-plan --resume <milestone-number>
 ```
 
 ## 流程
@@ -108,7 +107,7 @@ DFS 检测环。若发现环**立即停止**：
 
 ```bash
 # 写 issue 上下文文件
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 cat > "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
 # Issue #<N>
 
@@ -209,7 +208,6 @@ gh api -X PATCH "repos/$REPO/milestones/<N>" -f state=closed
 ## 附录 C: 状态恢复机制
 
 ```text
-/fwp-plan --resume <milestone-number>
 ```
 
 查询 milestone 下所有 issues，根据状态推断恢复动作：
@@ -217,7 +215,6 @@ gh api -X PATCH "repos/$REPO/milestones/<N>" -f state=closed
 | Issue 状态 | MR 状态 | 恢复动作 |
 |-----------|---------|---------|
 | open, 无 MR | — | 启动 subagent: `/fwp-ship <issue>` |
-| open, 有 MR | CI_FAILURE | 收集 CI log → subagent: `/fwp-ship --resume` |
 | open, 有 MR | PENDING | 继续监控 (`watch-pr.sh`) |
 | closed | MR merged | 跳过 |
 | closed | 无 MR | 跳过 |

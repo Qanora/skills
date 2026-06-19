@@ -25,12 +25,10 @@ echo "[fwp-inspect] CLI=$CLI LOG_DIR=$LOG_DIR DB=$DB_PATH"
 ## 调用方式
 
 ```text
-/fwp-inspect                 # 全量巡检：Tier1(8项机械) + Tier2(5项LLM)
-/fwp-inspect --quick         # 仅 Tier1 (8项机械, ~10秒, 零token)
-/fwp-inspect --resume        # 中断恢复
+/fwp-inspect                 # 13项全量巡检
 ```
 
-`--quick` 只跑机械检查，不消耗 LLM token，适合频繁运行。
+无参数。始终先跑 Tier 1（8项机械，秒级）。Tier 1 无 FAIL/WARN → 跳过 Tier 2 节省 token。Tier 1 有发现问题 → 自动启动 Tier 2 深度分析。
 
 ---
 

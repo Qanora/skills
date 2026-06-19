@@ -7,7 +7,6 @@ description: 恢复中断——自动检测未完成的 milestone/issue/state，
 
 自动检测当前项目中未完成的飞轮任务，从中断点继续。
 
-> **用户级 skill**：跨项目生效。替代各 skill 的 `--resume` 参数，统一入口。
 
 ## 上下文检测
 
@@ -21,10 +20,10 @@ echo "[fwp-resume] WORKSPACE=$WORKSPACE REPO=$REPO"
 ## 调用方式
 
 ```text
-/fwp-resume                       # 自动检测并继续
-/fwp-resume --status              # 只查看状态，不继续
-/fwp-resume --milestone <N>       # 恢复指定 milestone
+/fwp-resume                 # 自动扫描 + 按优先级恢复
 ```
+
+无参数。扫描 `.claude/state/` + GitHub → 显示状态 → 按 P0→P3 依次恢复。
 
 ## 流程
 
@@ -69,13 +68,10 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 ### 🔴 阻塞项（需立即处理）
 | 类型 | ID | 状态 | 恢复动作 |
 |------|-----|------|---------|
-| issue | #42 | BLOCKED_CI, fix_round=2 | fwp-ship 42 --resume |
-| issue | #28 | .fix_round=1, 无 .status | fwp-ship 28 --resume |
 
 ### 🟡 进行中
 | 类型 | ID | 状态 | 恢复动作 |
 |------|-----|------|---------|
-| milestone | #3 | 3/5 issues open | fwp-plan --resume 3 |
 
 ### 🟢 可清理
 | 类型 | 详情 | 动作 |
@@ -99,10 +95,8 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 
 ```text
 # 对每个 BLOCKED_CI issue
-Agent(subagent_type="general-purpose", prompt="/fwp-ship <N> --resume")
 
 # 对每个 open milestone
-Agent(subagent_type="general-purpose", prompt="/fwp-plan --resume <M>")
 ```
 
 串行执行，一个完成后读取 status 文件确认结果再继续下一个。

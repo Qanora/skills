@@ -23,10 +23,10 @@ echo "[fw-audit] REPO=$REPO BRANCH=$DEFAULT_BRANCH"
 ## 调用方式
 
 ```text
-/fw-audit                         # 全量审计
-/fw-audit --focus <维度>          # gates | guards | behavior | comms | efficiency
-/fw-audit --resume                # 中断恢复
+/fw-audit                    # 5维度全量审计
 ```
+
+无参数。始终跑满 5 个维度，不区分 focus。
 
 ---
 
