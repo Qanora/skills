@@ -26,13 +26,19 @@ OWNER="${OWNER:-$(gh auth status 2>&1 | grep -oP 'Logged in to github.com as \K\
 REPO_NAME="${1:-$(basename "$(pwd)")}"
 DEFAULT_BRANCH="${DEFAULT_BRANCH:-master}"
 
-if ! gh repo view "$OWNER/$REPO_NAME" >/dev/null 2>&1; then
-  gh repo create "$OWNER/$REPO_NAME" --private --clone
+# 检测是否已在目标 repo 内
+CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null | grep -oP '(?<=github.com[:/])[^/]+/[^.]+' || echo "")
+if [ "$CURRENT_REMOTE" = "$OWNER/$REPO_NAME" ]; then
+  echo "[SKIP] 已在 $OWNER/$REPO_NAME 内，跳过 clone"
 else
-  echo "[SKIP] 仓库已存在"
-  gh repo clone "$OWNER/$REPO_NAME" .
+  if ! gh repo view "$OWNER/$REPO_NAME" >/dev/null 2>&1; then
+    gh repo create "$OWNER/$REPO_NAME" --private --clone
+  else
+    echo "[SKIP] 仓库已存在"
+    gh repo clone "$OWNER/$REPO_NAME" .
+  fi
+  cd "$REPO_NAME"
 fi
-cd "$REPO_NAME"
 
 # 初始化默认分支（空仓库时）
 if [ -z "$(git log 2>/dev/null)" ]; then
@@ -113,24 +119,16 @@ done
 
 ### 阶段 7：辅助脚本
 
-从 skill 目录复制脚本到项目（脚本是 skill 的一部分，随目录软链自动可用）：
+只复制 `commit-msg`（git hook 依赖，需在项目内）。fwp-ship 的脚本直接用 skill 目录的（`~/.claude/skills/fwp-ship/scripts/`），不需要在项目中重复复制。
 
 ```bash
 mkdir -p scripts
-# fwp-ship 的脚本
-cp ~/.claude/skills/fwp-ship/scripts/watch-pr.sh scripts/
-cp ~/.claude/skills/fwp-ship/scripts/fwp-ship-cleanup.sh scripts/
-cp ~/.claude/skills/fwp-ship/scripts/cleanup-merged-branches.sh scripts/
-# fwp-setup 的脚本
-cp ~/.claude/skills/fwp-setup/scripts/commit-msg scripts/
-chmod +x scripts/*
+cp -n ~/.claude/skills/fwp-setup/scripts/commit-msg scripts/
+chmod +x scripts/commit-msg
 ```
 
 | 脚本 | 来源 | 用途 |
 |------|------|------|
-| `watch-pr.sh` | fwp-ship | 轮询 PR CI 状态 |
-| `fwp-ship-cleanup.sh` | fwp-ship | MR 合入后原子化清理 |
-| `cleanup-merged-branches.sh` | fwp-ship | 批量清理残留分支 |
 | `commit-msg` | fwp-setup | Git hook 校验 commit 含 issue 引用 |
 
 ### 阶段 8：项目配置文件
@@ -141,8 +139,9 @@ chmod +x scripts/*
 
 ```bash
 mkdir -p .claude
-cp ~/.claude/skills/fwp-setup/templates/settings.local.json .claude/
+cp -n ~/.claude/skills/fwp-setup/templates/settings.local.json .claude/
 ```
+> `-n`：已存在时不覆盖、不弹确认提示。若项目已有自定义 settings.local.json，需手动合并模板新增条目。
 
 覆盖飞轮所有操作：git/gh/state/tmp/skill/bash 工具链，`不含 defaultMode, 由用户全局设置控制`。
 
@@ -165,7 +164,7 @@ echo "☐ CI: .github/workflows/test.yml (gitleaks + commit-msg + tests)"
 echo "☐ Auto-merge: .github/workflows/auto-merge.yml"
 echo "☐ CodeRabbit: .coderabbit.yaml"
 echo "☐ 标签: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix"
-echo "☐ 脚本: scripts/watch-pr.sh, fwp-ship-cleanup.sh, cleanup-merged-branches.sh, commit-msg"
+echo "☐ 脚本: scripts/commit-msg（fwp-ship 脚本直接用 ~/.claude/skills/fwp-ship/scripts/）"
 echo "☐ Git hook: .git/hooks/commit-msg → scripts/commit-msg"
 echo "☐ pyproject.toml  +  .gitignore  +  CLAUDE.md"
 echo ""
