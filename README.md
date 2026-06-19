@@ -13,6 +13,7 @@
 | fw-audit | 飞轮审计：6 条固定审计项 → 扣分制评分 |
 | fw-plan | Issue 编排：拆解 → 依赖分析 → 批次规划 |
 | fw-ship | MR 交付：git/gh → CI 监控 → 修复派发 |
+| fw-debug | Bug 入口：复现→收集证据→创建 issue→派发 |
 | fw-build | TDD 开发：红→绿→重构 → simplify → HANDOFF |
 
 ## 安装
