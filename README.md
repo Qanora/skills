@@ -13,6 +13,7 @@
 | 项目 | fwp-debug | "我发现 bug" → 复现 → 证据 → 派发 |
 | 项目 | fwp-inspect | 全量巡检：运行时 8 项 + 代码审查 5 项 |
 | 项目 | fwp-resume | 继续中断的 milestone |
+| 项目 | fwp-help | 列出所有 skill 和调用方式 |
 | 飞轮 | fw-audit | AI 安全治理审计：门禁/约束/行为/传递/效率 |
 | — | fwp-build | TDD 开发（Agent 自动调用） |
 | — | fwp-ship | MR 交付（Agent 自动调用） |

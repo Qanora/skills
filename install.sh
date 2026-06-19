@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$SCRIPT_DIR/flywheel"
 DST="$HOME/.claude/skills"
 
-SKILLS=("fwp-inspect" "fw-audit" "fwp-plan" "fwp-ship" "fwp-build" "fwp-setup" "fwp-debug" "fwp-resume")
+SKILLS=("fwp-inspect" "fw-audit" "fwp-plan" "fwp-ship" "fwp-build" "fwp-setup" "fwp-debug" "fwp-resume" "fwp-help")
 # 卸载时也清理旧 lp-* 名称
 OLD_SKILLS=("lp-up" "lp-dp" "lp-ms" "lp-mr" "lp-dev" "lp-init" "fw-setup" "fw-plan" "fw-debug" "fw-inspect" "fw-build" "fw-ship" "fw-resume")
 

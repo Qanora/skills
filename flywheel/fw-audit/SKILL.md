@@ -118,20 +118,73 @@ echo "--- git hook ---"
 
 ## A3. BEHAVIOR — 行为审计
 
-**AI 是否出现了非预期行为？**
+**AI 是否出现了非预期行为？分两步：机械检查 + 会话审查。**
 
-> 此项审计当前会话上下文中的 tool call 历史，不由 bash 驱动。
+### 3.1 机械检查
 
-逐项检查当前会话：
+```bash
+echo "=== A3: 行为审计 ==="
+cd "$(git rev-parse --show-toplevel)"
+
+# 1. 未提交改动 — 可能是直接 Edit/Write 绕过 fwp-build
+echo "--- 未提交改动 ---"
+DIRTY=$(git status --porcelain)
+if [ -n "$DIRTY" ]; then
+  # 检查是否有活跃的 fwp-build session（通过最近 result 文件判断）
+  ACTIVE=$(find "/tmp/fw-flywheel/$PROJECT/" -name "result-*.md" -mmin -10 2>/dev/null | wc -l)
+  [ "$ACTIVE" -eq 0 ] && echo "FAIL: 有未提交改动且无活跃 fwp-build" || echo "PASS: 有活跃 fwp-build"
+else echo "PASS: 工作区干净"; fi
+
+# 2. 分支基址 — feature 分支是否从正确的 base 创建
+echo "--- 分支基址 ---"
+CUR=$(git branch --show-current)
+if echo "$CUR" | grep -q "feature/issue-"; then
+  BASE=$(git merge-base "origin/$DEFAULT_BRANCH" "$CUR" 2>/dev/null)
+  HEAD_BASE=$(git rev-parse "origin/$DEFAULT_BRANCH" 2>/dev/null)
+  if [ "$BASE" != "$HEAD_BASE" ]; then
+    echo "FAIL: $CUR 不基于 origin/$DEFAULT_BRANCH"
+  else echo "PASS: $CUR 基于 origin/$DEFAULT_BRANCH"; fi
+else echo "SKIP: 非 feature 分支"; fi
+
+# 3. 约束声明完整性 — 所有 skill 是否有"禁止用户交互"
+echo "--- 约束声明 ---"
+MISSING=$(for s in ~/.claude/skills/fwp-*/SKILL.md ~/.claude/skills/fw-audit/SKILL.md; do
+  grep -L "禁止用户交互" "$s" 2>/dev/null
+done)
+[ -z "$MISSING" ] && echo "PASS: 全部 skill 含禁止交互约束" || echo "WARN: 缺少约束: $(echo "$MISSING" | xargs basename)"
+
+# 4. subagent 链路 — ctx 无对应 status = 链断裂
+echo "--- subagent 链路 ---"
+CTX_COUNT=$(ls "/tmp/fw-flywheel/$PROJECT/"ctx-*.md 2>/dev/null | wc -l)
+STATUS_COUNT=$(ls "/tmp/fw-flywheel/$PROJECT/"status-*.md 2>/dev/null | wc -l)
+[ "$CTX_COUNT" -eq "$STATUS_COUNT" ] && echo "PASS: ctx/status 成对" || echo "WARN: ctx=$CTX_COUNT vs status=$STATUS_COUNT (有断裂)"
+
+# 5. git 操作频次 — 是否有异常高频操作
+echo "--- git 操作 ---"
+REFLOG_COUNT=$(git reflog --since="7 days ago" --format="%s" 2>/dev/null | wc -l)
+echo "7日 reflog: $REFLOG_COUNT 条"
+AMENDS=$(git reflog --since="7 days ago" --format="%s" 2>/dev/null | grep -c "amend" || echo 0)
+[ "$AMENDS" -gt 5 ] && echo "WARN: 7日内 $AMENDS 次 amend (>5)" || echo "PASS: amend $AMENDS 次"
+```
+
+### 3.2 会话审查（LLM 补充）
+
+机械检查覆盖了 5 项，剩余 1 项需要分析当前会话上下文：
 
 | 检查项 | 判定标准 |
 |--------|---------|
-| 代码编辑路径 | Edit/Write 不在 fwp-build subagent 内 → FAIL |
-| AskUserQuestion | 飞轮 skill 严禁调用 → FAIL |
-| 步骤完整性 | 对照 SKILL.md 预期步骤，跳过阻塞步骤 → WARN |
-| git 操作归属 | git commit/push/merge 不在 fwp-ship 内 → FAIL |
-| subagent 调用链 | fwp-build 被直接调用（非 fwp-ship 派发）→ WARN |
-| 未授权分支操作 | 从非 origin/DEFAULT_BRANCH 创建 feature 分支 → FAIL |
+| AskUserQuestion | 回顾当前会话 tool call 历史，出现即 FAIL |
+
+### 3.3 汇总
+
+| 检查项 | 检测方式 | 判定 |
+|--------|---------|------|
+| 未提交改动 | bash: git status | 有改动且无活跃 fwp-build → FAIL |
+| 分支基址 | bash: git merge-base | 非 origin/DEFAULT_BRANCH → FAIL |
+| 约束声明 | bash: grep "禁止用户交互" | 缺失 → WARN |
+| subagent 链路 | bash: ctx vs status 计数 | 不匹配 → WARN |
+| git 操作频次 | bash: reflog | amend >5/7天 → WARN |
+| AskUserQuestion | LLM: 会话审查 | 出现 → FAIL |
 
 ---
 
