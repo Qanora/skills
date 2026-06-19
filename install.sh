@@ -28,57 +28,55 @@ if $UNINSTALL; then
   echo "=== 卸载飞轮 skills ==="
   ALL=("${SKILLS[@]}" "${OLD_SKILLS[@]}")
   for skill in "${ALL[@]}"; do
-    link="$DST/$skill/SKILL.md"
+    link="$DST/$skill"
     if [ -L "$link" ]; then
       $DRY_RUN && echo "[DRY-RUN] rm $link" || rm "$link"
-      echo "[REMOVE] $link"
-    elif [ -e "$link" ]; then
-      $DRY_RUN && echo "[DRY-RUN] rm $link" || rm "$link"
-      echo "[REMOVE] $link (非软链，强制删除)"
+      echo "[REMOVE] $link (目录软链)"
+    elif [ -d "$link" ]; then
+      $DRY_RUN && echo "[DRY-RUN] rm -rf $link" || rm -rf "$link"
+      echo "[REMOVE] $link (目录)"
+    elif [ -f "$link/SKILL.md" ]; then
+      $DRY_RUN && echo "[DRY-RUN] rm $link/SKILL.md && rmdir $link" || { rm "$link/SKILL.md"; rmdir "$link" 2>/dev/null || true; }
+      echo "[REMOVE] $link (旧格式)"
     else
       echo "[SKIP]  $link (不存在)"
     fi
-    $DRY_RUN || rmdir "$DST/$skill" 2>/dev/null || true
   done
   exit 0
 fi
 
-# ── 检查源文件 ──
+# ── 检查源目录 ──
 echo "=== 飞轮 skill 安装 ==="
 echo "源: $SRC"
-echo "目标: $DST"
+echo "目标: $DST (目录级软链)"
 echo ""
 
 for skill in "${SKILLS[@]}"; do
-  if [ ! -f "$SRC/$skill/SKILL.md" ]; then
-    echo "[ERROR] 源文件不存在: $SRC/$skill/SKILL.md"
+  if [ ! -d "$SRC/$skill" ]; then
+    echo "[ERROR] 源目录不存在: $SRC/$skill"
     exit 1
   fi
 done
 
-# ── 安装软链 ──
-echo "已安装 skills:"
-echo ""
-
+# ── 安装目录级软链 ──
 for skill in "${SKILLS[@]}"; do
-  link="$DST/$skill/SKILL.md"
-  src="$SRC/$skill/SKILL.md"
+  link="$DST/$skill"
+  src="$SRC/$skill"
 
-  # 已存在且已是正确软链 → 跳过
+  # 已存在且是正确的目录软链 → 跳过
   if [ -L "$link" ] && [ "$(readlink "$link")" = "$src" ]; then
     echo "  [OK]    $skill (已正确链接)"
     continue
   fi
 
-  # 已存在但是文件/错误链接 → 先删
+  # 已存在但是文件/目录/错误链接 → 先删
   if [ -e "$link" ] || [ -L "$link" ]; then
-    $DRY_RUN && echo "[DRY-RUN] rm $link" || rm -f "$link"
+    $DRY_RUN && echo "[DRY-RUN] rm -rf $link" || rm -rf "$link"
   fi
 
   if $DRY_RUN; then
     echo "[DRY-RUN] ln -s $src → $link"
   else
-    mkdir -p "$DST/$skill"
     ln -sf "$src" "$link"
     echo "  [LINK]  $skill → $src"
   fi
@@ -87,5 +85,5 @@ done
 echo ""
 echo "=== 安装完成 ==="
 echo ""
-echo "验证: ls -la ~/.claude/skills/fw*/SKILL.md ~/.claude/skills/fwp*/SKILL.md"
-echo "测试: 在任意项目目录下输入 /fwp-plan 测试需求"
+echo "验证: ls -la ~/.claude/skills/fwp-* ~/.claude/skills/fw-audit"
+echo "测试: /fwp-help"
