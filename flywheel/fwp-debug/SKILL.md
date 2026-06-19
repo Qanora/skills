@@ -1,9 +1,9 @@
 ---
-name: fw-debug
+name: fwp-debug
 description: [项目] Bug 修复入口——复现→收集证据→创建 bug issue→派发 fw-plan，用户只需一句话描述
 ---
 
-# FW-DEBUG（Bug 修复入口 · 用户级）
+# FWP-DEBUG（Bug 修复入口 · 用户级）
 
 用户报告 bug → 自动复现 → 收集证据 → 创建结构化 bug issue → 派发 fw-plan 驱动修复。
 
@@ -16,15 +16,15 @@ WORKSPACE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$WORKSPACE"
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 CLI=$(awk '/\[project\.scripts\]/{found=1;next} found && /=/ {print $1; exit}' pyproject.toml 2>/dev/null || basename "$WORKSPACE")
-echo "[fw-debug] WORKSPACE=$WORKSPACE CLI=$CLI"
+echo "[fwp-debug] WORKSPACE=$WORKSPACE CLI=$CLI"
 ```
 
 ## 调用方式
 
 ```text
-/fw-debug <bug 描述>                           # 一句话描述
-/fw-debug <bug 描述> --repro "<复现命令>"       # 指定复现步骤
-/fw-debug <bug 描述> --log "<日志文件路径>"      # 指定日志文件
+/fwp-debug <bug 描述>                           # 一句话描述
+/fwp-debug <bug 描述> --repro "<复现命令>"       # 指定复现步骤
+/fwp-debug <bug 描述> --log "<日志文件路径>"      # 指定日志文件
 ```
 
 | 参数 | 说明 |
@@ -129,7 +129,7 @@ ISSUE_URL=$(gh issue create \
   --label "bug,needs-triage")
 
 ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
-echo "[fw-debug] 已创建 issue #$ISSUE_NUM"
+echo "[fwp-debug] 已创建 issue #$ISSUE_NUM"
 ```
 
 ### 5. 派发 fw-plan
@@ -137,7 +137,7 @@ echo "[fw-debug] 已创建 issue #$ISSUE_NUM"
 ```bash
 mkdir -p /tmp/fw-flywheel
 cat > "/tmp/fw-flywheel/milestone-bug-${ISSUE_NUM}.md" << EOF
-# [fw-debug][BUG] ${BUG_DESC}
+# [fwp-debug][BUG] ${BUG_DESC}
 
 | 字段 | 值 |
 |------|-----|
@@ -150,7 +150,7 @@ EOF
 ```
 
 ```text
-Agent(description: "fw-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fw-plan",
+Agent(description: "fw-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan",
   prompt: "milestone: /tmp/fw-flywheel/milestone-bug-${ISSUE_NUM}.md")
 ```
 

@@ -1,9 +1,9 @@
 ---
-name: fw-resume
+name: fwp-resume
 description: 恢复中断——自动检测未完成的 milestone/issue/state，继续飞轮执行
 ---
 
-# FW-RESUME（恢复中断 · 用户级）
+# FWP-RESUME（恢复中断 · 用户级）
 
 自动检测当前项目中未完成的飞轮任务，从中断点继续。
 
@@ -21,9 +21,9 @@ echo "[fw-resume] WORKSPACE=$WORKSPACE REPO=$REPO"
 ## 调用方式
 
 ```text
-/fw-resume                       # 自动检测并继续
-/fw-resume --status              # 只查看状态，不继续
-/fw-resume --milestone <N>       # 恢复指定 milestone
+/fwp-resume                       # 自动检测并继续
+/fwp-resume --status              # 只查看状态，不继续
+/fwp-resume --milestone <N>       # 恢复指定 milestone
 ```
 
 ## 流程
@@ -44,7 +44,7 @@ find .claude/state/ -name "*.fix_round" -exec sh -c 'v=$(cat {}); [ "$v" -gt 0 ]
 
 # 1c. 检查 fw-inspect findings
 echo "--- fw-inspect ---"
-cat .claude/state/fw-inspect/findings.json 2>/dev/null | jq '[.findings[] | select(.status=="open")] | length' 2>/dev/null || echo "0 条 open"
+cat .claude/state/fwp-inspect/findings.json 2>/dev/null | jq '[.findings[] | select(.status=="open")] | length' 2>/dev/null || echo "0 条 open"
 
 # 1d. 检查 fw-audit scores
 echo "--- fw-audit ---"
@@ -90,10 +90,10 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 
 ```text
 # 对每个 BLOCKED_CI issue
-Agent(subagent_type="fw-ship", prompt="/fw-ship <N> --resume")
+Agent(subagent_type="fwp-ship", prompt="/fwp-ship <N> --resume")
 
 # 对每个 open milestone
-Agent(subagent_type="fw-plan", prompt="/fw-plan --resume <M>")
+Agent(subagent_type="fwp-plan", prompt="/fwp-plan --resume <M>")
 ```
 
 串行执行，一个完成后读取 status 文件确认结果再继续下一个。

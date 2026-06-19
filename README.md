@@ -8,14 +8,14 @@
 
 | 类别 | Skill | 用途 |
 |------|-------|------|
-| 项目 | fw-setup | 初始化新项目：仓库、CI、标签、脚本 |
-| 项目 | fw-plan | "我想做 X" → 需求拆解 → Issue → 派发 |
-| 项目 | fw-debug | "我发现 bug Y" → 复现 → 收集证据 → 派发 |
-| 项目 | fw-inspect | 自动巡检项目运行时 → 8 项检查 → 发现问题 |
+| 项目 | fwp-setup | 初始化新项目：仓库、CI、标签、脚本 |
+| 项目 | fwp-plan | "我想做 X" → 需求拆解 → Issue → 派发 |
+| 项目 | fwp-debug | "我发现 bug Y" → 复现 → 收集证据 → 派发 |
+| 项目 | fwp-inspect | 自动巡检项目运行时 → 8 项检查 → 发现问题 |
+| 项目 | fwp-resume | 继续之前中断的 milestone |
 | 飞轮 | fw-audit | 审计飞轮自身执行质量 → 6 项扣分 → 改进 |
-| — | fw-resume | 继续之前中断的 milestone |
-| — | fw-build | TDD 开发（Agent 自动调用） |
-| — | fw-ship | MR 交付（Agent 自动调用） |
+| — | fwp-build | TDD 开发（Agent 自动调用） |
+| — | fwp-ship | MR 交付（Agent 自动调用） |
 
 ## 安装
 

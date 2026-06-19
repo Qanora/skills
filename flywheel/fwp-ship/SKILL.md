@@ -1,9 +1,9 @@
 ---
-name: fw-ship
+name: fwp-ship
 description: [项目] MR 交付——MR 全生命周期管理：提交、创建、监控、分配修复
 ---
 
-# FW-SHIP（第二层 · 用户级）
+# FWP-SHIP（第二层 · 用户级）
 
 MR (Merge Request) 生命周期管理。负责所有 git 和 MR 操作，不直接写代码。
 
@@ -22,8 +22,8 @@ echo "[fw-ship] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
 ## 调用方式
 
 ```text
-/fw-ship <issue-number>
-/fw-ship <issue-number> --resume
+/fwp-ship <issue-number>
+/fwp-ship <issue-number> --resume
 ```
 
 **`--resume`**: 从 GitHub 状态恢复。查询 PR 状态、fix_round，决定恢复动作。可恢复：`BLOCKED_CI` 且 `fix_round < 3`；不可恢复：`CONFLICT`、`API_ERROR`。
@@ -76,7 +76,7 @@ EOF
 
 ```text
 Agent(subagent_type="general-purpose", description="Dev issue #<N>",
-  prompt="/fw-build <N>
+  prompt="/fwp-build <N>
 
 上下文文件: /tmp/fw-flywheel/ctx-<N>.md
 分支: feature/issue-<N>（已从 origin/<默认分支> 创建）。请在此分支上开发，不要切回主分支。")
@@ -178,7 +178,7 @@ EOF
 
 ```text
 Agent(subagent_type="general-purpose", description="Fix MR #<mr>",
-  prompt="/fw-build <N> --fix <mr-number>
+  prompt="/fwp-build <N> --fix <mr-number>
 
 上下文: /tmp/fw-flywheel/ctx-<N>.md
 CI 日志: /tmp/fw-flywheel/ci-<mr-number>.md")
@@ -204,10 +204,10 @@ git push origin "$BRANCH"
 ## 状态机
 
 ```text
-[开始] → 从 origin/<默认分支> 开分支 → /fw-build → commit+push+mr create
+[开始] → 从 origin/<默认分支> 开分支 → /fwp-build → commit+push+mr create
     → watch-pr
         ├─ CI green → gh pr merge --squash → 切回主分支 → 删除本地分支 → [done]
-        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /fw-build --fix → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
+        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /fwp-build --fix → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
         │         └─ fix_round >= 3 → 写 BLOCKED_CI → [人工介入]
         └─ timeout → CI green → 合入; 否则 → 人工介入
 ```
@@ -221,8 +221,8 @@ git push origin "$BRANCH"
 ## 约束
 
 - 负责**所有** git 操作和 gh 操作
-- **禁止直接修改代码**：所有代码修改必须通过 `/fw-build` subagent 完成
-- **CI failure 交给 fw-build**：调用 `/fw-build <N> --fix` 修复
+- **禁止直接修改代码**：所有代码修改必须通过 `/fwp-build` subagent 完成
+- **CI failure 交给 fw-build**：调用 `/fwp-build <N> --fix` 修复
 - **feature 分支必须从 origin/<默认分支> 创建**（步骤 1a），禁止从其他分支派生
 - **禁止用户交互**：严禁 `AskUserQuestion`；分支/MR/CI/merge 全流程自动执行
 

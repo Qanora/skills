@@ -1,9 +1,9 @@
 ---
-name: fw-inspect
+name: fwp-inspect
 description: [项目] 引擎巡检——8 条固定检查项，每条输出 PASS/FAIL/WARN，FAIL/WARN 自动生成 milestone 派发 fw-plan
 ---
 
-# FW-INSPECT（引擎巡检 · 用户级）
+# FWP-INSPECT（引擎巡检 · 用户级）
 
 执行 8 条固定检查项，逐条输出确定结论。FAIL/WARN 自动写 milestone 文件并通过 subagent 派发 fw-plan。
 
@@ -19,16 +19,16 @@ CLI=$(awk '/\[project\.scripts\]/{found=1;next} found && /=/ {print $1; exit}' p
 PROJECT=$(grep -m1 '^name\s*=' pyproject.toml 2>/dev/null | sed 's/.*=\s*"\(.*\)".*/\1/' || basename "$WORKSPACE")
 LOG_DIR="$HOME/.$PROJECT/logs"
 DB_PATH=$(find "$HOME/.$PROJECT/data/" -name "*.db" 2>/dev/null | head -1)
-echo "[fw-inspect] CLI=$CLI LOG_DIR=$LOG_DIR DB=$DB_PATH"
+echo "[fwp-inspect] CLI=$CLI LOG_DIR=$LOG_DIR DB=$DB_PATH"
 ```
 
 ## 调用方式
 
 ```text
-/fw-inspect                      # 纯巡检（只查历史数据）
-/fw-inspect --run quick          # 执行引擎 quick + 巡检
-/fw-inspect --run full           # 执行引擎 full + 巡检
-/fw-inspect --resume             # 中断恢复
+/fwp-inspect                      # 纯巡检（只查历史数据）
+/fwp-inspect --run quick          # 执行引擎 quick + 巡检
+/fwp-inspect --run full           # 执行引擎 full + 巡检
+/fwp-inspect --resume             # 中断恢复
 ```
 
 ## 8 条固定检查项
@@ -212,7 +212,7 @@ FAIL:1  WARN:0  SKIP:4  PASS:3
 ```bash
 mkdir -p /tmp/fw-flywheel
 cat > "/tmp/fw-flywheel/milestone-${CHECK_ID}.md" << EOF
-# [fw-inspect][${CHECK_ID}] ${TITLE}
+# [fwp-inspect][${CHECK_ID}] ${TITLE}
 
 | 字段 | 值 |
 |------|-----|
@@ -225,14 +225,14 @@ EOF
 ```
 
 ```text
-Agent(description: "fw-plan: ${TITLE}", subagent_type: "fw-plan",
+Agent(description: "fw-plan: ${TITLE}", subagent_type: "fwp-plan",
   prompt: "milestone: /tmp/fw-flywheel/milestone-${CHECK_ID}.md")
 ```
 
 ### 5. 状态持久化
 
 ```text
-.claude/state/fw-inspect/
+.claude/state/fwp-inspect/
   round.md
   findings.json    # [{id, check_id, result, consecutive_rounds, auto_escalated}]
 ```

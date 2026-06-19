@@ -217,7 +217,7 @@ EOF
 ```
 
 ```text
-Agent(description: "fw-plan: 飞轮优化", subagent_type: "fw-plan",
+Agent(description: "fw-plan: 飞轮优化", subagent_type: "fwp-plan",
   prompt: "milestone: /tmp/fw-flywheel/milestone-audit-${ROUND}.md")
 ```
 

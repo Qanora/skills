@@ -1,9 +1,9 @@
 ---
-name: fw-build
+name: fwp-build
 description: [项目] TDD 开发——纯本地开发：实现/修复 → 本地验证 → simplify。不做任何 git 或 MR 操作。
 ---
 
-# FW-BUILD（第三层 · 用户级）
+# FWP-BUILD（第三层 · 用户级）
 
 纯本地开发管理。只负责写代码和验证，**不做 commit/push/MR 等任何 git 操作**（全部由第二层负责）。
 
@@ -43,7 +43,7 @@ fw-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fw-b
 ## 调用方式
 
 ```text
-/fw-build <issue-number> [--fix <mr-number>]
+/fwp-build <issue-number> [--fix <mr-number>]
 ```
 
 ## 开发模式 (无 `--fix` flag)
@@ -194,7 +194,7 @@ EOF
 
 ## 修复模式 (`--fix <mr-number>`)
 
-由 `/fw-ship` 调用。获取上下文→修复→验证→simplify→退出。**不 commit，不 push。**
+由 `/fwp-ship` 调用。获取上下文→修复→验证→simplify→退出。**不 commit，不 push。**
 
 ### 1. 切换已有分支 + 同步
 
