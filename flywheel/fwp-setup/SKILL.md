@@ -99,16 +99,25 @@ done
 
 ### 阶段 7：辅助脚本
 
-创建 `scripts/` 目录并写入辅助脚本：
+从 skill 目录复制脚本到项目（脚本是 skill 的一部分，随目录软链自动可用）：
 
-| 脚本 | 用途 |
-|------|------|
-| `watch-pr.sh` | 轮询 PR CI 状态直到 green/timeout/fail |
-| `fwp-ship-cleanup.sh` | MR 合入后原子化清理分支+状态文件 |
-| `cleanup-merged-branches.sh` | 批量清理已合并但残留的 feature 分支 |
-| `commit-msg` | Git hook — 强制 commit 关联 issue |
+```bash
+mkdir -p scripts
+# fwp-ship 的脚本
+cp ~/.claude/skills/fwp-ship/scripts/watch-pr.sh scripts/
+cp ~/.claude/skills/fwp-ship/scripts/fwp-ship-cleanup.sh scripts/
+cp ~/.claude/skills/fwp-ship/scripts/cleanup-merged-branches.sh scripts/
+# fwp-setup 的脚本
+cp ~/.claude/skills/fwp-setup/scripts/commit-msg scripts/
+chmod +x scripts/*
+```
 
-全部 `chmod +x`。脚本使用 `gh` + `git` 标准命令，不依赖项目特定工具。
+| 脚本 | 来源 | 用途 |
+|------|------|------|
+| `watch-pr.sh` | fwp-ship | 轮询 PR CI 状态 |
+| `fwp-ship-cleanup.sh` | fwp-ship | MR 合入后原子化清理 |
+| `cleanup-merged-branches.sh` | fwp-ship | 批量清理残留分支 |
+| `commit-msg` | fwp-setup | Git hook 校验 commit 含 issue 引用 |
 
 ### 阶段 8：项目配置文件
 

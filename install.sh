@@ -1,17 +1,16 @@
 #!/bin/bash
-# 飞轮 skill 安装脚本 — 将当前仓库的 skill 软链到 ~/.claude/skills/
-# 用法: ./install.sh [--dry-run] [--uninstall] [--scripts <project-path>]
+# 飞轮 skill 安装脚本 — 目录级软链到 ~/.claude/skills/
+# 用法: ./install.sh [--dry-run] [--uninstall]
+# 脚本随 skill 目录自动可用，无需单独安装
 set -euo pipefail
 
 DRY_RUN=false
 UNINSTALL=false
-SCRIPTS_TARGET=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=true; shift ;;
     --uninstall) UNINSTALL=true; shift ;;
-    --scripts) SCRIPTS_TARGET="$2"; shift 2 ;;
     *) echo "Unknown: $1"; exit 1 ;;
   esac
 done
@@ -85,33 +84,8 @@ for skill in "${SKILLS[@]}"; do
 done
 
 echo ""
-# ── 安装脚本到项目 ──
-if [ -n "$SCRIPTS_TARGET" ]; then
-  echo ""
-  echo "=== 安装脚本到 $SCRIPTS_TARGET/scripts/ ==="
-  if [ ! -d "$SCRIPTS_TARGET" ]; then
-    echo "[ERROR] 目标项目不存在: $SCRIPTS_TARGET"
-    exit 1
-  fi
-  SCRIPT_SRC="$SCRIPT_DIR/scripts"
-  mkdir -p "$SCRIPTS_TARGET/scripts"
-  for s in watch-pr.sh fwp-ship-cleanup.sh cleanup-merged-branches.sh commit-msg; do
-    if $DRY_RUN; then
-      echo "[DRY-RUN] cp $SCRIPT_SRC/$s → $SCRIPTS_TARGET/scripts/$s"
-    else
-      cp "$SCRIPT_SRC/$s" "$SCRIPTS_TARGET/scripts/$s"
-      chmod +x "$SCRIPTS_TARGET/scripts/$s" 2>/dev/null || true
-      echo "  [COPY]  $s"
-    fi
-  done
-  if [ -d "$SCRIPTS_TARGET/.git" ]; then
-    ln -sf ../../scripts/commit-msg "$SCRIPTS_TARGET/.git/hooks/commit-msg" 2>/dev/null || true
-    echo "  [HOOK]  commit-msg hook 已安装"
-  fi
-fi
 
 echo "=== 安装完成 ==="
 echo ""
 echo "验证: ls -la ~/.claude/skills/fwp-* ~/.claude/skills/fw-audit"
 echo "测试: /fwp-help"
-echo "安装脚本到项目: ./install.sh --scripts /path/to/project"

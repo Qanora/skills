@@ -107,16 +107,19 @@ Closes #<N>
 EOF
 )")
 MR_NUMBER=$(echo "$MR_URL" | grep -oE '[0-9]+$')
-bash scripts/watch-pr.sh "$MR_NUMBER" && gh pr merge "$MR_NUMBER" --squash --delete-branch
+# 优先用项目脚本，否则用 skill 自带的
+WATCH_PR="scripts/watch-pr.sh"
+[ -f "$WATCH_PR" ] || WATCH_PR="$HOME/.claude/skills/fwp-ship/scripts/watch-pr.sh"
+bash "$WATCH_PR" "$MR_NUMBER" && gh pr merge "$MR_NUMBER" --squash --delete-branch
 ```
 
 ### 3. 监控 MR
 
 ```bash
-bash scripts/watch-pr.sh <mr-number>
+WATCH_PR="scripts/watch-pr.sh"
+[ -f "$WATCH_PR" ] || WATCH_PR="$HOME/.claude/skills/fwp-ship/scripts/watch-pr.sh"
+bash "$WATCH_PR" <mr-number>
 ```
-
-> 若项目无 `scripts/watch-pr.sh`，使用内联轮询：每 30 秒 `gh pr view <N> --json statusCheckRollup,mergedAt` 直到 CI green/timeout。
 
 ### 4. 响应状态
 
