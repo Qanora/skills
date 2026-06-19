@@ -1,6 +1,6 @@
 ---
 name: fw-debug
-description: Bug 修复入口——复现→收集证据→创建 bug issue→派发 fw-plan，用户只需一句话描述
+description: [项目] Bug 修复入口——复现→收集证据→创建 bug issue→派发 fw-plan，用户只需一句话描述
 ---
 
 # FW-DEBUG（Bug 修复入口 · 用户级）

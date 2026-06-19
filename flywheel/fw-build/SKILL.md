@@ -1,6 +1,6 @@
 ---
 name: fw-build
-description: TDD 开发——纯本地开发：实现/修复 → 本地验证 → simplify。不做任何 git 或 MR 操作。
+description: [项目] TDD 开发——纯本地开发：实现/修复 → 本地验证 → simplify。不做任何 git 或 MR 操作。
 ---
 
 # FW-BUILD（第三层 · 用户级）

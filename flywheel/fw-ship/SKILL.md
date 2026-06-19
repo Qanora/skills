@@ -1,6 +1,6 @@
 ---
 name: fw-ship
-description: MR 交付——MR 全生命周期管理：提交、创建、监控、分配修复
+description: [项目] MR 交付——MR 全生命周期管理：提交、创建、监控、分配修复
 ---
 
 # FW-SHIP（第二层 · 用户级）

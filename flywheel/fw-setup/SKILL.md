@@ -1,6 +1,6 @@
 ---
 name: fw-setup
-description: 项目初始化——创建 GitHub 仓库、配置 CI/CD、分支保护、代码审查、Issue/PR 模板、标签、脚本，一键让飞轮体系就绪
+description: [项目] 初始化——创建 GitHub 仓库、配置 CI/CD、分支保护、代码审查、Issue/PR 模板、标签、脚本，一键让飞轮体系就绪
 ---
 
 # FW-SETUP（项目初始化 · 用户级）

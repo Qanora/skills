@@ -6,15 +6,16 @@
 
 6 个用户级 skill 组成从项目初始化到持续交付的全流程自动化闭环。
 
-| Skill | 用途 |
-|-------|------|
-| fw-setup | 项目初始化：仓库、CI、标签、脚本 |
-| fw-inspect | 引擎巡检：8 条固定检查项 → PASS/FAIL/WARN |
-| fw-audit | 飞轮审计：6 条固定审计项 → 扣分制评分 |
-| fw-plan | Issue 编排：拆解 → 依赖分析 → 批次规划 |
-| fw-ship | MR 交付：git/gh → CI 监控 → 修复派发 |
-| fw-debug | Bug 入口：复现→收集证据→创建 issue→派发 |
-| fw-build | TDD 开发：红→绿→重构 → simplify → HANDOFF |
+| 类别 | Skill | 用途 |
+|------|-------|------|
+| 项目 | fw-setup | 初始化新项目：仓库、CI、标签、脚本 |
+| 项目 | fw-plan | "我想做 X" → 需求拆解 → Issue → 派发 |
+| 项目 | fw-debug | "我发现 bug Y" → 复现 → 收集证据 → 派发 |
+| 项目 | fw-inspect | 自动巡检项目运行时 → 8 项检查 → 发现问题 |
+| 飞轮 | fw-audit | 审计飞轮自身执行质量 → 6 项扣分 → 改进 |
+| — | fw-resume | 继续之前中断的 milestone |
+| — | fw-build | TDD 开发（Agent 自动调用） |
+| — | fw-ship | MR 交付（Agent 自动调用） |
 
 ## 安装
 

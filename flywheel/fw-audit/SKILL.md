@@ -1,6 +1,6 @@
 ---
 name: fw-audit
-description: 飞轮审计——6 条固定审计检查项，扣分制评分，≤C 自动生成 DESIGN milestone 派发 fw-plan
+description: [飞轮] 审计自身——6 条固定审计检查项，扣分制评分，≤C 自动生成 DESIGN milestone 派发 fw-plan
 ---
 
 # FW-AUDIT（飞轮审计 · 用户级）

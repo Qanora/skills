@@ -1,6 +1,6 @@
 ---
 name: fw-plan
-description: 需求拆解——需求拆解、Issue 创建、依赖分析、批次编排、进度追踪
+description: [项目] 需求拆解——需求拆解、Issue 创建、依赖分析、批次编排、进度追踪
 ---
 
 # FW-PLAN（第一层 · 用户级）

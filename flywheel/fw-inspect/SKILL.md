@@ -1,6 +1,6 @@
 ---
 name: fw-inspect
-description: 引擎巡检——8 条固定检查项，每条输出 PASS/FAIL/WARN，FAIL/WARN 自动生成 milestone 派发 fw-plan
+description: [项目] 引擎巡检——8 条固定检查项，每条输出 PASS/FAIL/WARN，FAIL/WARN 自动生成 milestone 派发 fw-plan
 ---
 
 # FW-INSPECT（引擎巡检 · 用户级）
