@@ -160,21 +160,24 @@ else
 fi
 ```
 
-### 8. Simplify（启动新 agent）
-
-先将 diff 写入临时文件供 simplify 读取：
+### 8. Simplify（按 diff 大小决定策略）
 
 ```bash
-mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+mkdir -p /tmp/fw-flywheel/$PROJECT
 BRANCH=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo "master")
+ADDED=$(git diff --numstat "origin/$BRANCH" | awk '{s+=$1}END{print s+0}')
+DELETED=$(git diff --numstat "origin/$BRANCH" | awk '{s+=$2}END{print s+0}')
+TOTAL=$((ADDED + DELETED))
 git diff "origin/$BRANCH" --stat > /tmp/fw-flywheel/$PROJECT/diff-<N>.md
 ```
 
-```
-Agent(subagent_type="claude", prompt="执行 /simplify 对当前改动进行代码审查。diff 见 /tmp/fw-flywheel/$PROJECT/diff-<N>.md")
-```
+| diff 大小 | 策略 |
+|-----------|------|
+| < 10 行 | **跳过 simplify**（改动太小，不值得启动 subagent） |
+| 10-100 行 | 快速 simplify：`Agent(subagent_type="claude", prompt="快速审查 /tmp/fw-flywheel/$PROJECT/diff-<N>.md，只报严重问题")` |
+| > 100 行 | 完整 simplify：`Agent(subagent_type="claude", prompt="执行 /simplify，diff 见 /tmp/fw-flywheel/$PROJECT/diff-<N>.md")` |
 
-修复所有发现的问题，重复直到 simplify 返回无问题。
+修复所有发现的问题，重复直到 simplify 返回无问题（快速模式只跑一轮）。
 
 ### 9. 输出 Handoff + 结果文件
 

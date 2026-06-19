@@ -63,9 +63,17 @@ gh api "repos/$REPO/branches/$DEFAULT_BRANCH/protection" -X PUT \
 
 ### 阶段 3：CI/CD 工作流
 
-创建 `.github/workflows/test.yml`（3 个 job：gitleaks → commit-msg 校验 → pytest）和 `.github/workflows/auto-merge.yml`（PR 非 draft 时自动启用 squash auto-merge）。
+从 skill 模板复制（而非 LLM 生成，保证一致性）：
 
-> 使用标准 GitHub Actions 模板：gitleaks-action@v2 + astral-sh/setup-uv@v5 + pytest。Python 版本和依赖按 pyproject.toml 调整。
+```bash
+mkdir -p .github/workflows
+cp ~/.claude/skills/fwp-setup/templates/test.yml .github/workflows/
+cp ~/.claude/skills/fwp-setup/templates/auto-merge.yml .github/workflows/
+# 按实际 Python 版本调整
+sed -i "s/3\.11/${PYTHON_VERSION}/g" .github/workflows/test.yml
+```
+
+模板包含完整的三门禁：gitleaks → commit-msg 校验 → pytest，以及 squash auto-merge。
 
 ### 阶段 4：代码质量工具
 

@@ -58,7 +58,7 @@ ls /tmp/fw-flywheel/$PROJECT/milestone-*.md 2>/dev/null && \
 正在创建 Issue 并开始执行...
 ```
 
-> **300 行约束（soft）**：单个 issue 预计改动超过 300 行时，在 issue body 中标注 `⚠️ large diff`。不强制拆分，不阻塞执行。
+> **拆解硬约束**：单个 issue 预计改动超过 5 个文件 **或** 超过 300 行 → **必须拆分**。不允许创建 `⚠️ large diff` issue——拆到满足约束为止。
 
 ### 3. 创建 Issue + Milestone
 

@@ -35,14 +35,12 @@ echo "[fwp-debug] WORKSPACE=$WORKSPACE CLI=$CLI"
 
 ## 固定流程（5 步）
 
-### 1. 理解 bug
+### 1. 复现优先（fw-debug 核心价值——与 fwp-plan 的本质区别）
 
-从用户描述中提取：
+fw-debug 必须尝试复现。fwp-plan 只描述需求，fw-debug 提供证据。
 
 ```text
-现象: <用户描述的关键词>
-模块: <涉及的模块/文件>
-严重度: CRASH(崩溃) | WRONG(结果错误) | SLOW(性能) | COSMETIC(展示问题)
+复现状态: ✅ 已复现 | ⚠️ 部分复现 | ❌ 无法复现（仍有日志/环境证据）
 ```
 
 ### 2. 尝试复现

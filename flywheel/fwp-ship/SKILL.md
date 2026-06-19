@@ -127,7 +127,7 @@ bash "$WATCH_PR" <mr-number>
 |--------|------|------|
 | 0 | CI green | `gh pr merge --squash --delete-branch` → 清理本地分支 → `ISSUE_DONE` |
 | 1 | CI failure | 写 `BLOCKED_CI` → 收集 CI 日志 → 检查 fix_round |
-| 2 | timeout | CI green → 合入；否则 → 人工介入 |
+| 2 | timeout | **自动重试 1 次**（扩展 timeout 到 120 轮）；再次 timeout → 检查 CI 当前状态，green 则合入，否则写 `BLOCKED_CI` + CI job URL |
 
 **重试上限**：
 

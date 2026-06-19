@@ -288,7 +288,8 @@ gh api "repos/$REPO/milestones" --jq '.[]|select(.state=="closed")|"\(.title): \
 1. A1→A5 依次执行，每维度先跑 bash 再分析会话
 2. 汇总各维度 FAIL/WARN/PASS/INFO
 3. 所有 FAIL → 生成 CRITICAL DESIGN milestone → Agent(fwp-plan)
-4. WARN 连续 2 轮 → 升级为 FAIL
+4. 所有 WARN → 生成低优先级 WARNING milestone → Agent(fwp-plan)（不等待升级，即时派发）
+5. WARN 连续 2 轮未解决 → 升级为 FAIL
 
 ```bash
 for dim in GATES GUARDS BEHAVIOR COMMS EFFICIENCY; do

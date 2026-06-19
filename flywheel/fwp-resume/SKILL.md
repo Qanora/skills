@@ -86,7 +86,16 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 
 ### 3. 执行恢复
 
-按优先级顺序，对每个待恢复项启动对应的 subagent：
+**恢复优先级**（高→低）：
+
+| 优先级 | 状态 | 原因 |
+|--------|------|------|
+| P0 | BLOCKED_CI + fix_round < 3 | 阻塞其他 issue，优先修复 |
+| P1 | open issue，无 MR | 还没开始，尽快启动 |
+| P2 | open issue，有 pending MR | MR 已在等待 CI，继续监控 |
+| P3 | milestone 未完成 | 继续剩余的 open issues |
+
+对每个待恢复项，按 P0→P1→P2→P3 顺序串行启动对应的 subagent：
 
 ```text
 # 对每个 BLOCKED_CI issue
