@@ -17,28 +17,28 @@ description: [项目] TDD 开发——纯本地开发：实现/修复 → 本地
 WORKSPACE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$WORKSPACE"
 DEFAULT_BRANCH=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo "master")
-echo "[fw-build] WORKSPACE=$WORKSPACE BRANCH=$DEFAULT_BRANCH"
+echo "[fwp-build] WORKSPACE=$WORKSPACE BRANCH=$DEFAULT_BRANCH"
 ```
 
-**从文件读取上下文**（由 fw-ship 写入）：
+**从文件读取上下文**（由 fwp-ship 写入）：
 
 ```bash
 # 读取开发上下文（若存在）
 CTX_FILE="/tmp/fw-flywheel/$PROJECT/ctx-<N>.md"
 if [ -f "$CTX_FILE" ]; then
-  echo "[fw-build] 读取上下文: $CTX_FILE"
+  echo "[fwp-build] 读取上下文: $CTX_FILE"
   cat "$CTX_FILE"
 fi
 
 # 读取 CI 失败日志（--fix 模式，若存在）
 CI_FILE="/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
 if [ -f "$CI_FILE" ]; then
-  echo "[fw-build] 读取 CI 日志: $CI_FILE"
+  echo "[fwp-build] 读取 CI 日志: $CI_FILE"
   cat "$CI_FILE"
 fi
 ```
 
-fw-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fw-build 无需自己 `gh issue view`。
+fwp-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fwp-build 无需自己 `gh issue view`。
 
 ## 调用方式
 
@@ -50,7 +50,7 @@ fw-ship 已将 issue 内容、fix_round、前次改动写入 `ctx-<N>.md`，fw-b
 
 ### 1. 获取需求
 
-优先从 `/tmp/fw-flywheel/$PROJECT/ctx-<N>.md` 读取（fw-ship 已写入），若无则 fallback：
+优先从 `/tmp/fw-flywheel/$PROJECT/ctx-<N>.md` 读取（fwp-ship 已写入），若无则 fallback：
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"

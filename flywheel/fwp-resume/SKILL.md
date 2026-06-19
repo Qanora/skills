@@ -15,7 +15,7 @@ description: 恢复中断——自动检测未完成的 milestone/issue/state，
 WORKSPACE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$WORKSPACE"
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-echo "[fw-resume] WORKSPACE=$WORKSPACE REPO=$REPO"
+echo "[fwp-resume] WORKSPACE=$WORKSPACE REPO=$REPO"
 ```
 
 ## 调用方式
@@ -42,7 +42,7 @@ find .claude/state/ -name "*.status" -exec echo "{}: $(cat {})" \; 2>/dev/null |
 echo "--- 进行中修复 ---"
 find .claude/state/ -name "*.fix_round" -exec sh -c 'v=$(cat {}); [ "$v" -gt 0 ] 2>/dev/null && echo "{}: fix_round=$v"' \; 2>/dev/null || echo "(无)"
 
-# 1c. 检查 fw-inspect findings
+# 1c. 检查 fwp-inspect findings
 echo "--- fw-inspect ---"
 cat .claude/state/fwp-inspect/findings.json 2>/dev/null | jq '[.findings[] | select(.status=="open")] | length' 2>/dev/null || echo "0 条 open"
 
@@ -69,13 +69,13 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 ### 🔴 阻塞项（需立即处理）
 | 类型 | ID | 状态 | 恢复动作 |
 |------|-----|------|---------|
-| issue | #42 | BLOCKED_CI, fix_round=2 | fw-ship 42 --resume |
-| issue | #28 | .fix_round=1, 无 .status | fw-ship 28 --resume |
+| issue | #42 | BLOCKED_CI, fix_round=2 | fwp-ship 42 --resume |
+| issue | #28 | .fix_round=1, 无 .status | fwp-ship 28 --resume |
 
 ### 🟡 进行中
 | 类型 | ID | 状态 | 恢复动作 |
 |------|-----|------|---------|
-| milestone | #3 | 3/5 issues open | fw-plan --resume 3 |
+| milestone | #3 | 3/5 issues open | fwp-plan --resume 3 |
 
 ### 🟢 可清理
 | 类型 | 详情 | 动作 |

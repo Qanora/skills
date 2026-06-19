@@ -63,9 +63,9 @@ gh api "repos/$REPO/branches/$DEFAULT_BRANCH/protection" -X PUT \
 
 ### 阶段 3：CI/CD 工作流
 
-创建 `.github/workflows/test.yml`（gitleaks → commit-msg 校验 → pytest）和 `.github/workflows/auto-merge.yml`（自动 squash merge）。
+创建 `.github/workflows/test.yml`（3 个 job：gitleaks → commit-msg 校验 → pytest）和 `.github/workflows/auto-merge.yml`（PR 非 draft 时自动启用 squash auto-merge）。
 
-> 完整内容见源模板 `~/.claude/skills/fwp-setup/SKILL.md` 的阶段 3。
+> 使用标准 GitHub Actions 模板：gitleaks-action@v2 + astral-sh/setup-uv@v5 + pytest。Python 版本和依赖按 pyproject.toml 调整。
 
 ### 阶段 4：代码质量工具
 
@@ -99,9 +99,16 @@ done
 
 ### 阶段 7：辅助脚本
 
-创建 `scripts/` 目录并写入四个脚本：`watch-pr.sh`、`fw-ship-cleanup.sh`、`cleanup-merged-branches.sh`、`commit-msg`。全部执行 `chmod +x scripts/*.sh`。
+创建 `scripts/` 目录并写入辅助脚本：
 
-> 完整脚本内容见源模板。
+| 脚本 | 用途 |
+|------|------|
+| `watch-pr.sh` | 轮询 PR CI 状态直到 green/timeout/fail |
+| `fwp-ship-cleanup.sh` | MR 合入后原子化清理分支+状态文件 |
+| `cleanup-merged-branches.sh` | 批量清理已合并但残留的 feature 分支 |
+| `commit-msg` | Git hook — 强制 commit 关联 issue |
+
+全部 `chmod +x`。脚本使用 `gh` + `git` 标准命令，不依赖项目特定工具。
 
 ### 阶段 8：项目配置文件
 

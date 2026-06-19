@@ -1,11 +1,11 @@
 ---
 name: fwp-debug
-description: [项目] Bug 修复入口——复现→收集证据→创建 bug issue→派发 fw-plan，用户只需一句话描述
+description: [项目] Bug 修复入口——复现→收集证据→创建 bug issue→派发 fwp-plan，用户只需一句话描述
 ---
 
 # FWP-DEBUG（Bug 修复入口 · 用户级）
 
-用户报告 bug → 自动复现 → 收集证据 → 创建结构化 bug issue → 派发 fw-plan 驱动修复。
+用户报告 bug → 自动复现 → 收集证据 → 创建结构化 bug issue → 派发 fwp-plan 驱动修复。
 
 > **用户级 skill**：跨项目生效。用户只需一句话描述 bug，其余全部自动。
 
@@ -132,7 +132,7 @@ ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
 echo "[fwp-debug] 已创建 issue #$ISSUE_NUM"
 ```
 
-### 5. 派发 fw-plan
+### 5. 派发 fwp-plan
 
 ```bash
 mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
@@ -150,7 +150,7 @@ EOF
 ```
 
 ```text
-Agent(description: "fw-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan",
+Agent(description: "fwp-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan",
   prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-bug-${ISSUE_NUM}.md")
 ```
 
@@ -168,12 +168,12 @@ Agent(description: "fw-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan
 | 复现 | ✅ 已复现: `alphascreener screen --top 20` |
 | 模块 | alphascreener/phase2.py:145 |
 | Issue | #58 (bug, needs-triage) |
-| 下一步 | 已派发 fw-plan → fw-ship → fw-build |
+| 下一步 | 已派发 fwp-plan → fwp-ship → fwp-build |
 ```
 
 ## 约束
 
 - **固定流程**：5 步机械执行，不依赖 LLM 主观判断 bug 原因
-- **只收集证据，不修复**：fw-debug 不写代码，不分析根因，只创建 issue 并移交 fw-plan
-- **自动派发**：issue 创建后自动通过 subagent 派发 fw-plan
+- **只收集证据，不修复**：fw-debug 不写代码，不分析根因，只创建 issue 并移交 fwp-plan
+- **自动派发**：issue 创建后自动通过 subagent 派发 fwp-plan
 - **禁止用户交互**：严禁 `AskUserQuestion`

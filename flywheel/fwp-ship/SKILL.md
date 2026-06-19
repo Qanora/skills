@@ -16,7 +16,7 @@ WORKSPACE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$WORKSPACE"
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 DEFAULT_BRANCH=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo "master")
-echo "[fw-ship] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
+echo "[fwp-ship] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
 ```
 
 ## 调用方式
@@ -53,7 +53,7 @@ git checkout -b feature/issue-<N>
 **1b. 写入上下文文件 + 通过 subagent 调用第三层**：
 
 ```bash
-# 写入开发上下文文件（供 fw-build 读取）
+# 写入开发上下文文件（供 fwp-build 读取）
 mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
 FIX_ROUND=$(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0)
 cat > "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
@@ -216,13 +216,13 @@ git push origin "$BRANCH"
 
 | 计数器 | 上限 | 触发条件 | 超限状态 | 重置时机 |
 |--------|------|---------|---------|---------|
-| `fix_round` | 3 | CI-failure → fw-build --fix | `BLOCKED_CI` | 修复成功 push 后 |
+| `fix_round` | 3 | CI-failure → fwp-build --fix | `BLOCKED_CI` | 修复成功 push 后 |
 
 ## 约束
 
 - 负责**所有** git 操作和 gh 操作
 - **禁止直接修改代码**：所有代码修改必须通过 `/fwp-build` subagent 完成
-- **CI failure 交给 fw-build**：调用 `/fwp-build <N> --fix` 修复
+- **CI failure 交给 fwp-build**：调用 `/fwp-build <N> --fix` 修复
 - **feature 分支必须从 origin/<默认分支> 创建**（步骤 1a），禁止从其他分支派生
 - **禁止用户交互**：严禁 `AskUserQuestion`；分支/MR/CI/merge 全流程自动执行
 
@@ -267,7 +267,7 @@ git branch -D feature/issue-<N> 2>/dev/null || true
 mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
-# 写入 fw-plan 可读的状态文件
+# 写入 fwp-plan 可读的状态文件
 mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
 cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << 'EOF'
 # Issue #<N> 最终状态
@@ -278,17 +278,17 @@ cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << 'EOF'
 | MR | #<mr-number> |
 | 改动摘要 | $(cat /tmp/fw-flywheel/$PROJECT/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
 EOF
-# 清理 /tmp/fw-flywheel 临时文件（保留 status 供 fw-plan 读取）
+# 清理 /tmp/fw-flywheel 临时文件（保留 status 供 fwp-plan 读取）
 rm -f "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" \
       "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md" \
       "/tmp/fw-flywheel/$PROJECT/result-<N>.md" \
       "/tmp/fw-flywheel/$PROJECT/diff-<N>.md"
-echo "[CLEANUP] /tmp/fw-flywheel/$PROJECT/ 上下文文件已清理（status-<N>.md 保留供 fw-plan 读取）"
+echo "[CLEANUP] /tmp/fw-flywheel/$PROJECT/ 上下文文件已清理（status-<N>.md 保留供 fwp-plan 读取）"
 ```
 
 ## 错误处理
 
-当 fw-build 返回 `FAIL_DONE=<error-type>` 信号时：
+当 fwp-build 返回 `FAIL_DONE=<error-type>` 信号时：
 
 | Error type | 含义 | 处理方式 |
 |-----------|------|---------|
@@ -296,7 +296,7 @@ echo "[CLEANUP] /tmp/fw-flywheel/$PROJECT/ 上下文文件已清理（status-<N>
 | CONFLICT_UNRESOLVABLE | merge conflict 无法解决 | 写 `CONFLICT`，人工介入 |
 | UNKNOWN | 其他异常 | 记录日志，人工介入 |
 
-所有异常状态**同时写入 status 文件**供 fw-plan 读取：
+所有异常状态**同时写入 status 文件**供 fwp-plan 读取：
 
 ```bash
 # BLOCKED_CI / CONFLICT / ABANDONED 时写入
