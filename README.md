@@ -18,13 +18,18 @@
 ## 安装
 
 ```bash
-cp -r flywheel/lp-* ~/.claude/skills/
+git clone https://github.com/Qanora/skills.git
+cd skills
+./install.sh                 # 软链安装
+./install.sh --dry-run       # 预览
+./install.sh --uninstall     # 卸载
 ```
 
-跨所有项目即刻生效，无需额外配置。
+软链 `~/.claude/skills/lp-*/SKILL.md` → `skills/flywheel/lp-*/SKILL.md`。修改任一端自动同步。
 
 ## 目录结构
 
+- `install.sh` — 一键软链安装/卸载
 - `flywheel/README.md` — 架构总览 + 设计原则
 - `flywheel/lp-*/SKILL.md` — 各层 skill 定义
 - `flywheel/MIGRATION.md` — 从项目级迁移到用户级的对照
