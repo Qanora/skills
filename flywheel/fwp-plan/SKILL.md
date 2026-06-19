@@ -22,12 +22,12 @@ echo "[fwp-plan] WORKSPACE=$WORKSPACE BRANCH=$DEFAULT_BRANCH"
 
 ```bash
 # 查找是否有待处理的 milestone 文件
-ls /tmp/fw-flywheel/milestone-*.md 2>/dev/null && \
+ls /tmp/fw-flywheel/$PROJECT/milestone-*.md 2>/dev/null && \
   echo "[fwp-plan] 发现 milestone 文件:" && \
-  cat /tmp/fw-flywheel/milestone-*.md
+  cat /tmp/fw-flywheel/$PROJECT/milestone-*.md
 ```
 
-若存在 `/tmp/fw-flywheel/milestone-*.md`，以此作为需求来源；否则使用用户直接输入的 `<需求描述>`。
+若存在 `/tmp/fw-flywheel/$PROJECT/milestone-*.md`，以此作为需求来源；否则使用用户直接输入的 `<需求描述>`。
 
 ## 调用方式
 
@@ -40,7 +40,7 @@ ls /tmp/fw-flywheel/milestone-*.md 2>/dev/null && \
 
 ### 1. 分析需求
 
-优先读取 `/tmp/fw-flywheel/milestone-*.md`，若存在则使用文件中的结构化需求；否则分析用户直接输入的 `<需求描述>`。
+优先读取 `/tmp/fw-flywheel/$PROJECT/milestone-*.md`，若存在则使用文件中的结构化需求；否则分析用户直接输入的 `<需求描述>`。
 
 ### 2. 拆解 Issue
 
@@ -108,8 +108,8 @@ DFS 检测环。若发现环**立即停止**：
 
 ```bash
 # 写 issue 上下文文件
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/ctx-<N>.md" << EOF
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
 # Issue #<N>
 
 | 字段 | 值 |
@@ -124,13 +124,13 @@ EOF
 Agent(subagent_type="general-purpose", description="MR issue #<N>",
   prompt="/fwp-ship <N>
 
-上下文: /tmp/fw-flywheel/ctx-<N>.md")
+上下文: /tmp/fw-flywheel/$PROJECT/ctx-<N>.md")
 ```
 
 subagent 退出后，读取状态文件判断结果：
 
 ```bash
-STATUS=$(cat "/tmp/fw-flywheel/status-<N>.md" 2>/dev/null | grep "状态" | sed 's/.*| //;s/ |.*//')
+STATUS=$(cat "/tmp/fw-flywheel/$PROJECT/status-<N>.md" 2>/dev/null | grep "状态" | sed 's/.*| //;s/ |.*//')
 case "$STATUS" in
   MERGED)     echo "[fwp-plan] #<N> 已合入 ✓" ;;
   BLOCKED_CI) echo "[fwp-plan] #<N> CI 阻塞，fix_round 超限，需人工介入" && break ;;

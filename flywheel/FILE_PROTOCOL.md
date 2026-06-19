@@ -1,6 +1,6 @@
 # /tmp/fw-flywheel 文件传递协议
 
-飞轮跨层数据传递通过 `/tmp/fw-flywheel/` 目录下的临时 markdown 文件完成。Agent prompt 只传文件路径，subagent 启动后自己读文件。
+飞轮跨层数据传递通过 `/tmp/fw-flywheel/$PROJECT/` 目录下的临时 markdown 文件完成。Agent prompt 只传文件路径，subagent 启动后自己读文件。
 
 ## 核心原则
 
@@ -102,13 +102,13 @@ fix_round > 0 时：
 ## 生命周期
 
 ```
-1. 生产者: Write 文件到 /tmp/fw-flywheel/
-2. 生产者: Agent(prompt="读 /tmp/fw-flywheel/<file> 获取上下文")
-3. 消费者: Read /tmp/fw-flywheel/<file>
+1. 生产者: Write 文件到 /tmp/fw-flywheel/$PROJECT/
+2. 生产者: Agent(prompt="读 /tmp/fw-flywheel/$PROJECT/<file> 获取上下文")
+3. 消费者: Read /tmp/fw-flywheel/$PROJECT/<file>
 4. 消费者: 执行任务
-5. 消费者: Write 结果到 /tmp/fw-flywheel/result-<N>.md + HANDOFF
-6. 生产者: Read /tmp/fw-flywheel/result-<N>.md
-7. lp-mr cleanup: rm /tmp/fw-flywheel/{ctx,ci,result}-<N>.md
+5. 消费者: Write 结果到 /tmp/fw-flywheel/$PROJECT/result-<N>.md + HANDOFF
+6. 生产者: Read /tmp/fw-flywheel/$PROJECT/result-<N>.md
+7. lp-mr cleanup: rm /tmp/fw-flywheel/$PROJECT/{ctx,ci,result}-<N>.md
 ```
 
 ## 截断规则
@@ -124,5 +124,5 @@ fix_round > 0 时：
 | 数据 | 传递方式 |
 |------|---------|
 | 控制信号（成功/失败） | HANDOFF（终端输出） |
-| 详细上下文（issue、CI log、diff） | /tmp/fw-flywheel/ 文件 |
+| 详细上下文（issue、CI log、diff） | /tmp/fw-flywheel/$PROJECT/ 文件 |
 | 改动摘要 | result-<N>.md + HANDOFF |

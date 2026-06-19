@@ -54,9 +54,9 @@ git checkout -b feature/issue-<N>
 
 ```bash
 # 写入开发上下文文件（供 fw-build 读取）
-mkdir -p /tmp/fw-flywheel
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
 FIX_ROUND=$(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0)
-cat > "/tmp/fw-flywheel/ctx-<N>.md" << EOF
+cat > "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
 # Issue #<N> 开发上下文
 
 | 字段 | 值 |
@@ -78,13 +78,13 @@ EOF
 Agent(subagent_type="general-purpose", description="Dev issue #<N>",
   prompt="/fwp-build <N>
 
-上下文文件: /tmp/fw-flywheel/ctx-<N>.md
+上下文文件: /tmp/fw-flywheel/$PROJECT/ctx-<N>.md
 分支: feature/issue-<N>（已从 origin/<默认分支> 创建）。请在此分支上开发，不要切回主分支。")
 ```
 
 subagent 退出后：
 1. 检查终端输出中的 `---HANDOFF---` ... `---HANDOFF_END---` 信号块
-2. 读取 `/tmp/fw-flywheel/result-<N>.md` 获取改动摘要
+2. 读取 `/tmp/fw-flywheel/$PROJECT/result-<N>.md` 获取改动摘要
 3. `DEV_DONE=<branch>` → 继续步骤 2；`FAIL_DONE=<error-type>` → 错误处理
 
 ### 2. commit + push + 创建 MR
@@ -142,7 +142,7 @@ fi
 拉取 CI 失败日志，**写入文件**（截断 ≤ 200 行），递增 fix_round：
 
 ```bash
-mkdir -p /tmp/fw-flywheel
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
 FIX_ROUND=$(( $(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0) + 1 ))
 echo "$FIX_ROUND" > .claude/state/issue-<N>.fix_round
 
@@ -156,21 +156,21 @@ FAILING=$(gh pr view <mr-number> --json statusCheckRollup --jq '
 # 写入 CI 文件（截断保护：≤200 行）
 LINES=$(echo "$FAILING" | wc -l)
 if [ "$LINES" -gt 200 ]; then
-  echo "$FAILING" | head -100 > "/tmp/fw-flywheel/ci-<mr-number>.md"
-  echo "" >> "/tmp/fw-flywheel/ci-<mr-number>.md"
-  echo "... (省略 $((LINES - 200)) 行) ..." >> "/tmp/fw-flywheel/ci-<mr-number>.md"
-  echo "" >> "/tmp/fw-flywheel/ci-<mr-number>.md"
-  echo "$FAILING" | tail -50 >> "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" | head -100 > "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
+  echo "" >> "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
+  echo "... (省略 $((LINES - 200)) 行) ..." >> "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
+  echo "" >> "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
+  echo "$FAILING" | tail -50 >> "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
 else
-  echo "$FAILING" > "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" > "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md"
 fi
 
 # 更新上下文文件附加 fix_round 信息
-cat >> "/tmp/fw-flywheel/ctx-<N>.md" << EOF
+cat >> "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" << EOF
 
 ## CI 修复轮次 $FIX_ROUND/3
 
-CI 失败详情见 /tmp/fw-flywheel/ci-<mr-number>.md
+CI 失败详情见 /tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md
 EOF
 ```
 
@@ -180,11 +180,11 @@ EOF
 Agent(subagent_type="general-purpose", description="Fix MR #<mr>",
   prompt="/fwp-build <N> --fix <mr-number>
 
-上下文: /tmp/fw-flywheel/ctx-<N>.md
-CI 日志: /tmp/fw-flywheel/ci-<mr-number>.md")
+上下文: /tmp/fw-flywheel/$PROJECT/ctx-<N>.md
+CI 日志: /tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md")
 ```
 
-等待 `FIX_DONE=<BRANCH>` 信号 + 读取 `/tmp/fw-flywheel/result-<N>.md`，进入步骤 6。
+等待 `FIX_DONE=<BRANCH>` 信号 + 读取 `/tmp/fw-flywheel/$PROJECT/result-<N>.md`，进入步骤 6。
 
 ### 6. commit fix + push 同一分支
 
@@ -268,22 +268,22 @@ mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
 # 写入 fw-plan 可读的状态文件
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/status-<N>.md" << 'EOF'
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << 'EOF'
 # Issue #<N> 最终状态
 
 | 字段 | 值 |
 |------|-----|
 | 状态 | MERGED |
 | MR | #<mr-number> |
-| 改动摘要 | $(cat /tmp/fw-flywheel/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
+| 改动摘要 | $(cat /tmp/fw-flywheel/$PROJECT/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
 EOF
 # 清理 /tmp/fw-flywheel 临时文件（保留 status 供 fw-plan 读取）
-rm -f "/tmp/fw-flywheel/ctx-<N>.md" \
-      "/tmp/fw-flywheel/ci-<mr-number>.md" \
-      "/tmp/fw-flywheel/result-<N>.md" \
-      "/tmp/fw-flywheel/diff-<N>.md"
-echo "[CLEANUP] /tmp/fw-flywheel/ 上下文文件已清理（status-<N>.md 保留供 fw-plan 读取）"
+rm -f "/tmp/fw-flywheel/$PROJECT/ctx-<N>.md" \
+      "/tmp/fw-flywheel/$PROJECT/ci-<mr-number>.md" \
+      "/tmp/fw-flywheel/$PROJECT/result-<N>.md" \
+      "/tmp/fw-flywheel/$PROJECT/diff-<N>.md"
+echo "[CLEANUP] /tmp/fw-flywheel/$PROJECT/ 上下文文件已清理（status-<N>.md 保留供 fw-plan 读取）"
 ```
 
 ## 错误处理
@@ -300,8 +300,8 @@ echo "[CLEANUP] /tmp/fw-flywheel/ 上下文文件已清理（status-<N>.md 保�
 
 ```bash
 # BLOCKED_CI / CONFLICT / ABANDONED 时写入
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/status-<N>.md" << EOF
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/status-<N>.md" << EOF
 # Issue #<N> 最终状态
 
 | 字段 | 值 |

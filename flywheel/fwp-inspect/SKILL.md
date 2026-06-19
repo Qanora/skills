@@ -170,7 +170,7 @@ else echo "SKIP: 非 --run 模式"; fi
 
 ```bash
 if [ "${1:-}" = "--run" ]; then
-  DELTA=$(cat /tmp/fw-flywheel/rss_delta 2>/dev/null || echo "0")
+  DELTA=$(cat /tmp/fw-flywheel/$PROJECT/rss_delta 2>/dev/null || echo "0")
   if [ "$(echo "$DELTA > 200"|bc -l 2>/dev/null)" = "1" ]; then
     echo "WARN: 单次 RSS 增量 ${DELTA}MB"; else echo "PASS: ${DELTA}MB (阈值 200)"; fi
 else echo "SKIP: 非 --run 模式"; fi
@@ -181,7 +181,7 @@ else echo "SKIP: 非 --run 模式"; fi
 ## 执行流程
 
 ### 1. (可选) 执行引擎
-`--run quick/full` 时运行引擎命令，同时采集 RSS delta 写入 `/tmp/fw-flywheel/rss_delta`。
+`--run quick/full` 时运行引擎命令，同时采集 RSS delta 写入 `/tmp/fw-flywheel/$PROJECT/rss_delta`。
 
 ### 2. 逐条执行 8 项检查
 按编号顺序，每条输出一行结论。
@@ -210,8 +210,8 @@ FAIL:1  WARN:0  SKIP:4  PASS:3
 每项 FAIL/WARN 生成 milestone 文件并通过 subagent 派发：
 
 ```bash
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/milestone-${CHECK_ID}.md" << EOF
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/milestone-${CHECK_ID}.md" << EOF
 # [fwp-inspect][${CHECK_ID}] ${TITLE}
 
 | 字段 | 值 |
@@ -226,7 +226,7 @@ EOF
 
 ```text
 Agent(description: "fw-plan: ${TITLE}", subagent_type: "fwp-plan",
-  prompt: "milestone: /tmp/fw-flywheel/milestone-${CHECK_ID}.md")
+  prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-${CHECK_ID}.md")
 ```
 
 ### 5. 状态持久化

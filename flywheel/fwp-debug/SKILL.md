@@ -96,7 +96,7 @@ cd "$(git rev-parse --show-toplevel)"
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
 # 构建 issue body
-cat > /tmp/fw-flywheel/bug-body.md << EOF
+cat > /tmp/fw-flywheel/$PROJECT/bug-body.md << EOF
 ## 现象
 
 ${BUG_DESC}
@@ -115,7 +115,7 @@ ${REPRO_CMD:-（自动复现未成功，需手动补充）}
 
 ## 日志/输出
 
-$(cat /tmp/fw-flywheel/bug-log.txt 2>/dev/null || echo "(无)")
+$(cat /tmp/fw-flywheel/$PROJECT/bug-log.txt 2>/dev/null || echo "(无)")
 
 ## 预期行为
 
@@ -125,7 +125,7 @@ EOF
 # 创建 issue
 ISSUE_URL=$(gh issue create \
   --title "bug: ${BUG_DESC}" \
-  --body "$(cat /tmp/fw-flywheel/bug-body.md)" \
+  --body "$(cat /tmp/fw-flywheel/$PROJECT/bug-body.md)" \
   --label "bug,needs-triage")
 
 ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
@@ -135,8 +135,8 @@ echo "[fwp-debug] 已创建 issue #$ISSUE_NUM"
 ### 5. 派发 fw-plan
 
 ```bash
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/milestone-bug-${ISSUE_NUM}.md" << EOF
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/milestone-bug-${ISSUE_NUM}.md" << EOF
 # [fwp-debug][BUG] ${BUG_DESC}
 
 | 字段 | 值 |
@@ -151,7 +151,7 @@ EOF
 
 ```text
 Agent(description: "fw-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan",
-  prompt: "milestone: /tmp/fw-flywheel/milestone-bug-${ISSUE_NUM}.md")
+  prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-bug-${ISSUE_NUM}.md")
 ```
 
 ---

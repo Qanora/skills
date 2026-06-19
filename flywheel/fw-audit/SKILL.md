@@ -143,8 +143,8 @@ echo "超 7 天残留文件: $STALE 个"
 
 ```bash
 echo "=== HANDOFF-FMT 检查 ==="
-# 检查 /tmp/fw-flywheel/result-*.md 中是否有非标准状态
-NONSTD=$(grep -r "状态" /tmp/fw-flywheel/result-*.md 2>/dev/null | \
+# 检查 /tmp/fw-flywheel/$PROJECT/result-*.md 中是否有非标准状态
+NONSTD=$(grep -r "状态" /tmp/fw-flywheel/$PROJECT/result-*.md 2>/dev/null | \
   grep -v "DEV_DONE\|FIX_DONE\|FAIL_DONE" | wc -l)
 echo "非标准 HANDOFF: $NONSTD 个"
 ```
@@ -202,8 +202,8 @@ HANDOFF-FMT:  -X  (权重  5%, 扣分上限  5)
 | **D (<60)** | 立即生成 CRITICAL DESIGN milestone → fw-plan |
 
 ```bash
-mkdir -p /tmp/fw-flywheel
-cat > "/tmp/fw-flywheel/milestone-audit-${ROUND}.md" << EOF
+mkdir -p /tmp/fw-flywheel/$PROJECT/$PROJECT
+cat > "/tmp/fw-flywheel/$PROJECT/milestone-audit-${ROUND}.md" << EOF
 # [fw-audit][DESIGN] 飞轮健康度 ${SCORE}分 (${GRADE})
 
 | 字段 | 值 |
@@ -218,7 +218,7 @@ EOF
 
 ```text
 Agent(description: "fw-plan: 飞轮优化", subagent_type: "fwp-plan",
-  prompt: "milestone: /tmp/fw-flywheel/milestone-audit-${ROUND}.md")
+  prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-audit-${ROUND}.md")
 ```
 
 ### 5. 状态持久化
