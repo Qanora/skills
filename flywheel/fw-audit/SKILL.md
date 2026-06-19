@@ -249,7 +249,7 @@ for dim in GATES GUARDS BEHAVIOR COMMS EFFICIENCY; do
 | 证据 | ${EVIDENCE[$dim]} |
 | 建议 | ${FIX[$dim]} |
 EOF
-  Agent(description: "fwp-plan: 修复飞轮/${dim}", subagent_type: "fwp-plan",
+  Agent(description: "fwp-plan: 修复飞轮/${dim}", subagent_type: "general-purpose",
     prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-audit-${dim}.md")
 done
 ```

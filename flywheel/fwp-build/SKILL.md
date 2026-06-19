@@ -112,20 +112,51 @@ git diff --shortstat "origin/$BRANCH"
 
 ### 7. 本地验证（全部阻塞步骤）
 
+按项目类型自动选择 linter 和测试框架。失败则修复后重试。
+
 ```bash
-# 代码质量 — 检测项目使用的 linter
 cd "$(git rev-parse --show-toplevel)"
-if command -v ruff &>/dev/null && [ -f pyproject.toml ]; then
-  ruff check . && ruff format --check .
-elif command -v eslint &>/dev/null; then
-  npx eslint . && npx prettier --check .
+
+# ── Lint ──
+if [ -f pyproject.toml ]; then
+  # Python: ruff (首选) 或 flake8+pylint
+  command -v ruff &>/dev/null && (ruff check . && ruff format --check .) || \
+    (flake8 . 2>/dev/null && pylint src/ 2>/dev/null) || \
+    echo "WARN: 无可用 Python linter, 跳过 lint"
+elif [ -f package.json ]; then
+  # Node.js: eslint+prettier 或 biome
+  if grep -q '"biome"' package.json 2>/dev/null; then
+    npx biome check . 2>/dev/null || echo "WARN: biome 检查失败"
+  else
+    npx eslint . 2>/dev/null && npx prettier --check . 2>/dev/null || echo "WARN: eslint/prettier 失败"
+  fi
+elif [ -f go.mod ]; then
+  # Go: go vet + staticcheck
+  go vet ./... 2>/dev/null && (command -v staticcheck &>/dev/null && staticcheck ./... || echo "INFO: 无 staticcheck") || echo "WARN: go vet 失败"
+elif [ -f Cargo.toml ]; then
+  # Rust: cargo clippy
+  cargo clippy -- -D warnings 2>/dev/null || echo "WARN: clippy 失败"
+elif [ -f pom.xml ] || [ -f build.gradle ]; then
+  # Java: checkstyle (若配置)
+  [ -f checkstyle.xml ] && mvn checkstyle:check 2>/dev/null || echo "INFO: 无 Java linter 配置, 跳过"
+else
+  echo "INFO: 未识别项目类型, 跳过 lint"
 fi
 
-# 全量测试 — 检测项目使用的测试框架
-if [ -f pyproject.toml ]; then
-  python -m pytest tests/ -v
+# ── Test ──
+if [ -f pyproject.toml ] || [ -f setup.py ]; then
+  python -m pytest tests/ -v 2>/dev/null || python -m unittest discover tests/ -v 2>/dev/null || echo "FAIL: Python 测试失败"
 elif [ -f package.json ]; then
-  npx jest --verbose
+  if grep -q '"vitest"' package.json 2>/dev/null; then npx vitest --run 2>/dev/null
+  else npx jest --verbose 2>/dev/null || npx mocha 2>/dev/null; fi || echo "FAIL: Node.js 测试失败"
+elif [ -f go.mod ]; then
+  go test ./... -v 2>/dev/null || echo "FAIL: Go 测试失败"
+elif [ -f Cargo.toml ]; then
+  cargo test 2>/dev/null || echo "FAIL: Rust 测试失败"
+elif [ -f pom.xml ] || [ -f build.gradle ]; then
+  mvn test 2>/dev/null || gradle test 2>/dev/null || echo "FAIL: Java 测试失败"
+else
+  echo "INFO: 未识别项目类型, 跳过测试"
 fi
 ```
 

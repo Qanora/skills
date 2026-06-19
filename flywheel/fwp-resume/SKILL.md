@@ -90,10 +90,10 @@ git branch | grep "feature/issue-" | sed 's/^[* ]*//' || echo "(无)"
 
 ```text
 # 对每个 BLOCKED_CI issue
-Agent(subagent_type="fwp-ship", prompt="/fwp-ship <N> --resume")
+Agent(subagent_type="general-purpose", prompt="/fwp-ship <N> --resume")
 
 # 对每个 open milestone
-Agent(subagent_type="fwp-plan", prompt="/fwp-plan --resume <M>")
+Agent(subagent_type="general-purpose", prompt="/fwp-plan --resume <M>")
 ```
 
 串行执行，一个完成后读取 status 文件确认结果再继续下一个。

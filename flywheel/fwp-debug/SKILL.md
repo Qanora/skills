@@ -150,7 +150,7 @@ EOF
 ```
 
 ```text
-Agent(description: "fwp-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "fwp-plan",
+Agent(description: "fwp-plan: 修复 bug #${ISSUE_NUM}", subagent_type: "general-purpose",
   prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-bug-${ISSUE_NUM}.md")
 ```
 

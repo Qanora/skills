@@ -225,7 +225,7 @@ for finding in "${FINDINGS[@]}"; do
 | 建议 | ${suggestion} |
 EOF
   # 派发
-  Agent(description: "fwp-plan: ${title}", subagent_type: "fwp-plan",
+  Agent(description: "fwp-plan: ${title}", subagent_type: "general-purpose",
     prompt: "milestone: /tmp/fw-flywheel/$PROJECT/milestone-${id}.md")
 done
 ```
