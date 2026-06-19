@@ -144,7 +144,7 @@ mkdir -p .claude
 cp ~/.claude/skills/fwp-setup/templates/settings.local.json .claude/
 ```
 
-覆盖飞轮所有操作：git/gh/state/tmp/skill/bash 工具链，`defaultMode: "dontAsk"`。
+覆盖飞轮所有操作：git/gh/state/tmp/skill/bash 工具链，`不含 defaultMode, 由用户全局设置控制`。
 
 ### 阶段 9：验证 + 安装 git hook
 

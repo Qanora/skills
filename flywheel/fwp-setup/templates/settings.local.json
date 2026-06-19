@@ -72,8 +72,11 @@
       "Write(/tmp/fw-flywheel/*)",
       "Read(/tmp/fw-flywheel/*)",
       "WebSearch(*)",
-      "WebFetch(*)"
-    ],
-    "defaultMode": "dontAsk"
+      "WebFetch(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Read(*)",
+      "Monitor(*)"
+    ]
   }
 }
