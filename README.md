@@ -8,12 +8,12 @@
 
 | Skill | 用途 |
 |-------|------|
-| lp-init | 项目初始化：仓库、CI、标签、脚本 |
-| lp-up | 引擎观察：执行+分析 → 发现产品缺陷 |
-| lp-dp | 飞轮自检：审计飞轮执行 → 发现流程偏差 |
-| lp-ms | Issue 编排：拆解 → 依赖分析 → 批次规划 |
-| lp-mr | MR 生命周期：git/gh → CI 监控 → 修复派发 |
-| lp-dev | 本地开发：TDD → 验证 → simplify → HANDOFF |
+| fw-setup | 项目初始化：仓库、CI、标签、脚本 |
+| fw-inspect | 引擎巡检：8 条固定检查项 → PASS/FAIL/WARN |
+| fw-audit | 飞轮审计：6 条固定审计项 → 扣分制评分 |
+| fw-plan | Issue 编排：拆解 → 依赖分析 → 批次规划 |
+| fw-ship | MR 交付：git/gh → CI 监控 → 修复派发 |
+| fw-build | TDD 开发：红→绿→重构 → simplify → HANDOFF |
 
 ## 安装
 

@@ -1,9 +1,9 @@
 ---
-name: lp-mr
-description: 第二层飞轮——MR 全生命周期管理：提交、创建、监控、分配修复
+name: fw-ship
+description: MR 交付——MR 全生命周期管理：提交、创建、监控、分配修复
 ---
 
-# LP-MR（第二层 · 用户级）
+# FW-SHIP（第二层 · 用户级）
 
 MR (Merge Request) 生命周期管理。负责所有 git 和 MR 操作，不直接写代码。
 
@@ -16,14 +16,14 @@ WORKSPACE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$WORKSPACE"
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 DEFAULT_BRANCH=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo "master")
-echo "[lp-mr] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
+echo "[fw-ship] WORKSPACE=$WORKSPACE REPO=$REPO BRANCH=$DEFAULT_BRANCH"
 ```
 
 ## 调用方式
 
 ```text
-/lp-mr <issue-number>
-/lp-mr <issue-number> --resume
+/fw-ship <issue-number>
+/fw-ship <issue-number> --resume
 ```
 
 **`--resume`**: 从 GitHub 状态恢复。查询 PR 状态、fix_round，决定恢复动作。可恢复：`BLOCKED_CI` 且 `fix_round < 3`；不可恢复：`CONFLICT`、`API_ERROR`。
@@ -53,10 +53,10 @@ git checkout -b feature/issue-<N>
 **1b. 写入上下文文件 + 通过 subagent 调用第三层**：
 
 ```bash
-# 写入开发上下文文件（供 lp-dev 读取）
-mkdir -p /tmp/lp-flywheel
+# 写入开发上下文文件（供 fw-build 读取）
+mkdir -p /tmp/fw-flywheel
 FIX_ROUND=$(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0)
-cat > "/tmp/lp-flywheel/ctx-<N>.md" << EOF
+cat > "/tmp/fw-flywheel/ctx-<N>.md" << EOF
 # Issue #<N> 开发上下文
 
 | 字段 | 值 |
@@ -76,15 +76,15 @@ EOF
 
 ```text
 Agent(subagent_type="general-purpose", description="Dev issue #<N>",
-  prompt="/lp-dev <N>
+  prompt="/fw-build <N>
 
-上下文文件: /tmp/lp-flywheel/ctx-<N>.md
+上下文文件: /tmp/fw-flywheel/ctx-<N>.md
 分支: feature/issue-<N>（已从 origin/<默认分支> 创建）。请在此分支上开发，不要切回主分支。")
 ```
 
 subagent 退出后：
 1. 检查终端输出中的 `---HANDOFF---` ... `---HANDOFF_END---` 信号块
-2. 读取 `/tmp/lp-flywheel/result-<N>.md` 获取改动摘要
+2. 读取 `/tmp/fw-flywheel/result-<N>.md` 获取改动摘要
 3. `DEV_DONE=<branch>` → 继续步骤 2；`FAIL_DONE=<error-type>` → 错误处理
 
 ### 2. commit + push + 创建 MR
@@ -142,7 +142,7 @@ fi
 拉取 CI 失败日志，**写入文件**（截断 ≤ 200 行），递增 fix_round：
 
 ```bash
-mkdir -p /tmp/lp-flywheel
+mkdir -p /tmp/fw-flywheel
 FIX_ROUND=$(( $(cat .claude/state/issue-<N>.fix_round 2>/dev/null || echo 0) + 1 ))
 echo "$FIX_ROUND" > .claude/state/issue-<N>.fix_round
 
@@ -156,21 +156,21 @@ FAILING=$(gh pr view <mr-number> --json statusCheckRollup --jq '
 # 写入 CI 文件（截断保护：≤200 行）
 LINES=$(echo "$FAILING" | wc -l)
 if [ "$LINES" -gt 200 ]; then
-  echo "$FAILING" | head -100 > "/tmp/lp-flywheel/ci-<mr-number>.md"
-  echo "" >> "/tmp/lp-flywheel/ci-<mr-number>.md"
-  echo "... (省略 $((LINES - 200)) 行) ..." >> "/tmp/lp-flywheel/ci-<mr-number>.md"
-  echo "" >> "/tmp/lp-flywheel/ci-<mr-number>.md"
-  echo "$FAILING" | tail -50 >> "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" | head -100 > "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "" >> "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "... (省略 $((LINES - 200)) 行) ..." >> "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "" >> "/tmp/fw-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" | tail -50 >> "/tmp/fw-flywheel/ci-<mr-number>.md"
 else
-  echo "$FAILING" > "/tmp/lp-flywheel/ci-<mr-number>.md"
+  echo "$FAILING" > "/tmp/fw-flywheel/ci-<mr-number>.md"
 fi
 
 # 更新上下文文件附加 fix_round 信息
-cat >> "/tmp/lp-flywheel/ctx-<N>.md" << EOF
+cat >> "/tmp/fw-flywheel/ctx-<N>.md" << EOF
 
 ## CI 修复轮次 $FIX_ROUND/3
 
-CI 失败详情见 /tmp/lp-flywheel/ci-<mr-number>.md
+CI 失败详情见 /tmp/fw-flywheel/ci-<mr-number>.md
 EOF
 ```
 
@@ -178,13 +178,13 @@ EOF
 
 ```text
 Agent(subagent_type="general-purpose", description="Fix MR #<mr>",
-  prompt="/lp-dev <N> --fix <mr-number>
+  prompt="/fw-build <N> --fix <mr-number>
 
-上下文: /tmp/lp-flywheel/ctx-<N>.md
-CI 日志: /tmp/lp-flywheel/ci-<mr-number>.md")
+上下文: /tmp/fw-flywheel/ctx-<N>.md
+CI 日志: /tmp/fw-flywheel/ci-<mr-number>.md")
 ```
 
-等待 `FIX_DONE=<BRANCH>` 信号 + 读取 `/tmp/lp-flywheel/result-<N>.md`，进入步骤 6。
+等待 `FIX_DONE=<BRANCH>` 信号 + 读取 `/tmp/fw-flywheel/result-<N>.md`，进入步骤 6。
 
 ### 6. commit fix + push 同一分支
 
@@ -204,10 +204,10 @@ git push origin "$BRANCH"
 ## 状态机
 
 ```text
-[开始] → 从 origin/<默认分支> 开分支 → /lp-dev → commit+push+mr create
+[开始] → 从 origin/<默认分支> 开分支 → /fw-build → commit+push+mr create
     → watch-pr
         ├─ CI green → gh pr merge --squash → 切回主分支 → 删除本地分支 → [done]
-        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /lp-dev --fix → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
+        ├─ CI fail → 写 BLOCKED_CI → fix_round < 3? → 收集日志 → /fw-build --fix → [WAIT: FIX_DONE] → 清除状态 → commit+push → watch-pr
         │         └─ fix_round >= 3 → 写 BLOCKED_CI → [人工介入]
         └─ timeout → CI green → 合入; 否则 → 人工介入
 ```
@@ -216,13 +216,13 @@ git push origin "$BRANCH"
 
 | 计数器 | 上限 | 触发条件 | 超限状态 | 重置时机 |
 |--------|------|---------|---------|---------|
-| `fix_round` | 3 | CI-failure → lp-dev --fix | `BLOCKED_CI` | 修复成功 push 后 |
+| `fix_round` | 3 | CI-failure → fw-build --fix | `BLOCKED_CI` | 修复成功 push 后 |
 
 ## 约束
 
 - 负责**所有** git 操作和 gh 操作
-- **禁止直接修改代码**：所有代码修改必须通过 `/lp-dev` subagent 完成
-- **CI failure 交给 lp-dev**：调用 `/lp-dev <N> --fix` 修复
+- **禁止直接修改代码**：所有代码修改必须通过 `/fw-build` subagent 完成
+- **CI failure 交给 fw-build**：调用 `/fw-build <N> --fix` 修复
 - **feature 分支必须从 origin/<默认分支> 创建**（步骤 1a），禁止从其他分支派生
 - **禁止用户交互**：严禁 `AskUserQuestion`；分支/MR/CI/merge 全流程自动执行
 
@@ -267,28 +267,28 @@ git branch -D feature/issue-<N> 2>/dev/null || true
 mkdir -p .claude/state
 echo "MERGED" > .claude/state/issue-<N>.status
 rm -f .claude/state/issue-<N>.fix_round
-# 写入 lp-ms 可读的状态文件
-mkdir -p /tmp/lp-flywheel
-cat > "/tmp/lp-flywheel/status-<N>.md" << 'EOF'
+# 写入 fw-plan 可读的状态文件
+mkdir -p /tmp/fw-flywheel
+cat > "/tmp/fw-flywheel/status-<N>.md" << 'EOF'
 # Issue #<N> 最终状态
 
 | 字段 | 值 |
 |------|-----|
 | 状态 | MERGED |
 | MR | #<mr-number> |
-| 改动摘要 | $(cat /tmp/lp-flywheel/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
+| 改动摘要 | $(cat /tmp/fw-flywheel/result-<N>.md 2>/dev/null | grep "摘要" | sed 's/.*| //;s/ |.*//') |
 EOF
-# 清理 /tmp/lp-flywheel 临时文件（保留 status 供 lp-ms 读取）
-rm -f "/tmp/lp-flywheel/ctx-<N>.md" \
-      "/tmp/lp-flywheel/ci-<mr-number>.md" \
-      "/tmp/lp-flywheel/result-<N>.md" \
-      "/tmp/lp-flywheel/diff-<N>.md"
-echo "[CLEANUP] /tmp/lp-flywheel/ 上下文文件已清理（status-<N>.md 保留供 lp-ms 读取）"
+# 清理 /tmp/fw-flywheel 临时文件（保留 status 供 fw-plan 读取）
+rm -f "/tmp/fw-flywheel/ctx-<N>.md" \
+      "/tmp/fw-flywheel/ci-<mr-number>.md" \
+      "/tmp/fw-flywheel/result-<N>.md" \
+      "/tmp/fw-flywheel/diff-<N>.md"
+echo "[CLEANUP] /tmp/fw-flywheel/ 上下文文件已清理（status-<N>.md 保留供 fw-plan 读取）"
 ```
 
 ## 错误处理
 
-当 lp-dev 返回 `FAIL_DONE=<error-type>` 信号时：
+当 fw-build 返回 `FAIL_DONE=<error-type>` 信号时：
 
 | Error type | 含义 | 处理方式 |
 |-----------|------|---------|
@@ -296,12 +296,12 @@ echo "[CLEANUP] /tmp/lp-flywheel/ 上下文文件已清理（status-<N>.md 保�
 | CONFLICT_UNRESOLVABLE | merge conflict 无法解决 | 写 `CONFLICT`，人工介入 |
 | UNKNOWN | 其他异常 | 记录日志，人工介入 |
 
-所有异常状态**同时写入 status 文件**供 lp-ms 读取：
+所有异常状态**同时写入 status 文件**供 fw-plan 读取：
 
 ```bash
 # BLOCKED_CI / CONFLICT / ABANDONED 时写入
-mkdir -p /tmp/lp-flywheel
-cat > "/tmp/lp-flywheel/status-<N>.md" << EOF
+mkdir -p /tmp/fw-flywheel
+cat > "/tmp/fw-flywheel/status-<N>.md" << EOF
 # Issue #<N> 最终状态
 
 | 字段 | 值 |

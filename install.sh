@@ -19,21 +19,25 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$SCRIPT_DIR/flywheel"
 DST="$HOME/.claude/skills"
 
-SKILLS=("lp-up" "lp-dp" "lp-ms" "lp-mr" "lp-dev" "lp-init")
+SKILLS=("fw-inspect" "fw-audit" "fw-plan" "fw-ship" "fw-build" "fw-setup")
+# 卸载时也清理旧 lp-* 名称
+OLD_SKILLS=("lp-up" "lp-dp" "lp-ms" "lp-mr" "lp-dev" "lp-init")
 
 # ── 卸载 ──
 if $UNINSTALL; then
   echo "=== 卸载飞轮 skills ==="
-  for skill in "${SKILLS[@]}"; do
+  ALL=("${SKILLS[@]}" "${OLD_SKILLS[@]}")
+  for skill in "${ALL[@]}"; do
     link="$DST/$skill/SKILL.md"
-    target=$(readlink "$link" 2>/dev/null || true)
     if [ -L "$link" ]; then
       $DRY_RUN && echo "[DRY-RUN] rm $link" || rm "$link"
       echo "[REMOVE] $link"
+    elif [ -e "$link" ]; then
+      $DRY_RUN && echo "[DRY-RUN] rm $link" || rm "$link"
+      echo "[REMOVE] $link (非软链，强制删除)"
     else
-      echo "[SKIP]  $link (非软链，跳过)"
+      echo "[SKIP]  $link (不存在)"
     fi
-    # 清理空目录
     $DRY_RUN || rmdir "$DST/$skill" 2>/dev/null || true
   done
   exit 0

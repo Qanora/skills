@@ -1,6 +1,6 @@
-# /tmp/lp-flywheel 文件传递协议
+# /tmp/fw-flywheel 文件传递协议
 
-飞轮跨层数据传递通过 `/tmp/lp-flywheel/` 目录下的临时 markdown 文件完成。Agent prompt 只传文件路径，subagent 启动后自己读文件。
+飞轮跨层数据传递通过 `/tmp/fw-flywheel/` 目录下的临时 markdown 文件完成。Agent prompt 只传文件路径，subagent 启动后自己读文件。
 
 ## 核心原则
 
@@ -8,7 +8,7 @@
 2. **消费者自取** — subagent 启动后自己 `Read` 所需的上下文文件
 3. **生产者截断** — 大日志/输出写入前截断（≤200 行或 10KB）
 4. **HANDOFF 仍用于触发信号** — 文件用于传递数据，HANDOFF 用于传递控制信号
-5. **lp-mr 负责清理** — merge 或 abandon 后在 cleanup 步骤删除相关临时文件
+5. **fw-ship 负责清理** — merge 或 abandon 后在 cleanup 步骤删除相关临时文件
 
 ## 文件格式
 
@@ -102,13 +102,13 @@ fix_round > 0 时：
 ## 生命周期
 
 ```
-1. 生产者: Write 文件到 /tmp/lp-flywheel/
-2. 生产者: Agent(prompt="读 /tmp/lp-flywheel/<file> 获取上下文")
-3. 消费者: Read /tmp/lp-flywheel/<file>
+1. 生产者: Write 文件到 /tmp/fw-flywheel/
+2. 生产者: Agent(prompt="读 /tmp/fw-flywheel/<file> 获取上下文")
+3. 消费者: Read /tmp/fw-flywheel/<file>
 4. 消费者: 执行任务
-5. 消费者: Write 结果到 /tmp/lp-flywheel/result-<N>.md + HANDOFF
-6. 生产者: Read /tmp/lp-flywheel/result-<N>.md
-7. lp-mr cleanup: rm /tmp/lp-flywheel/{ctx,ci,result}-<N>.md
+5. 消费者: Write 结果到 /tmp/fw-flywheel/result-<N>.md + HANDOFF
+6. 生产者: Read /tmp/fw-flywheel/result-<N>.md
+7. lp-mr cleanup: rm /tmp/fw-flywheel/{ctx,ci,result}-<N>.md
 ```
 
 ## 截断规则
@@ -124,5 +124,5 @@ fix_round > 0 时：
 | 数据 | 传递方式 |
 |------|---------|
 | 控制信号（成功/失败） | HANDOFF（终端输出） |
-| 详细上下文（issue、CI log、diff） | /tmp/lp-flywheel/ 文件 |
+| 详细上下文（issue、CI log、diff） | /tmp/fw-flywheel/ 文件 |
 | 改动摘要 | result-<N>.md + HANDOFF |
