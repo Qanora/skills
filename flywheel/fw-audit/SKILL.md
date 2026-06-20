@@ -47,6 +47,42 @@ echo "--- CI 门禁 ---"
 [ -f .github/workflows/test.yml ] && echo "PASS: test.yml" || echo "FAIL: 无 test.yml"
 grep -c "gitleaks\|commit-msg\|test" .github/workflows/test.yml 2>/dev/null >/dev/null && echo "PASS: 含 gitleaks/commit-msg/test" || echo "WARN: CI 门禁不完整"
 
+# CI 绕过检测 — 是否存在 PR 在 CI 完成前被强制合入
+echo "--- CI 绕过检测 ---"
+
+MERGED_PRS=$(gh pr list --state merged --limit 20 --json number,mergedAt,mergeCommit \
+  --jq '.[] | select(.mergeCommit.oid != null) | "\(.number)|\(.mergedAt)|\(.mergeCommit.oid)"')
+
+CI_BYPASS=0
+CI_DETAILS=""
+
+while IFS='|' read -r num merged_at merge_sha; do
+  [ -z "$merge_sha" ] && continue
+  # 获取 merge commit 的 CI 状态
+  STATE=$(gh api "repos/$REPO/commits/$merge_sha/status" --jq '.state' 2>/dev/null || echo "unknown")
+
+  if [ "$STATE" != "success" ]; then
+    CHECK_TOTAL=$(gh api "repos/$REPO/commits/$merge_sha/check-runs" --jq '.total_count' 2>/dev/null || echo "0")
+
+    if [ "$CHECK_TOTAL" = "0" ]; then
+      CI_BYPASS=$((CI_BYPASS + 1))
+      CI_DETAILS="$CI_DETAILS\n    PR #$num (CI未运行)"
+    elif [ "$STATE" = "failure" ]; then
+      CI_BYPASS=$((CI_BYPASS + 1))
+      CI_DETAILS="$CI_DETAILS\n    PR #$num (CI失败仍合入)"
+    elif [ "$STATE" = "pending" ]; then
+      CI_BYPASS=$((CI_BYPASS + 1))
+      CI_DETAILS="$CI_DETAILS\n    PR #$num (CI未完成即合入)"
+    fi
+  fi
+done <<< "$MERGED_PRS"
+
+if [ "$CI_BYPASS" -gt 0 ]; then
+  echo "FAIL: $CI_BYPASS 个 PR 在 CI 未通过时被合入:$CI_DETAILS"
+else
+  echo "PASS: 所有 PR 均通过 CI 后合入"
+fi
+
 # Auto-merge 安全性
 echo "--- Auto-merge ---"
 [ -f .github/workflows/auto-merge.yml ] && echo "PASS: auto-merge.yml" || echo "FAIL: 无 auto-merge"
@@ -66,6 +102,7 @@ echo "--- 密钥检测 ---"
 |--------|--------|
 | 分支保护 (require PR + status checks) | FAIL |
 | CI 门禁缺一项 (gitleaks/commit-msg/tests) | FAIL |
+| CI 绕过 (PR 未等 CI 通过即合入) | FAIL |
 | Auto-merge 非 squash | WARN |
 | 无代码审查 (CodeRabbit/PR Agent) | WARN |
 | 无密钥检测 (Gitleaks) | FAIL |
