@@ -138,6 +138,43 @@ echo "--- 分支命名 ---"
 BAD=$(git branch | grep "feature/" | grep -v "feature/issue-" | wc -l)
 [ "$BAD" -gt 0 ] && echo "WARN: $BAD 个分支命名不规范" || echo "PASS: 分支命名规范"
 
+# issue 闭环检测 — 已合并 PR 的关联 issue 是否已关闭
+echo "--- issue 闭环 ---"
+
+MERGED_PRS=$(gh pr list --state merged --limit 30 --json number,body,headRefName \
+  --jq '.[] | "\(.number)|\(.body)|\(.headRefName)"')
+
+ORPHAN=0
+ORPHAN_DETAILS=""
+
+while IFS='|' read -r pr_num body branch; do
+  [ -z "$pr_num" ] && continue
+
+  ISSUE_NUM=""
+  # 从分支名提取 issue-<num>
+  if echo "$branch" | grep -qE 'issue-[0-9]+'; then
+    ISSUE_NUM=$(echo "$branch" | grep -oE 'issue-[0-9]+' | grep -oE '[0-9]+' | head -1)
+  fi
+  # 从 PR body 提取 closes/fixes #<num>
+  if [ -z "$ISSUE_NUM" ]; then
+    ISSUE_NUM=$(echo "$body" | grep -oEi '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#[0-9]+' | grep -oE '[0-9]+' | head -1)
+  fi
+
+  if [ -n "$ISSUE_NUM" ]; then
+    STATE=$(gh issue view "$ISSUE_NUM" --json state -q '.state' 2>/dev/null)
+    if [ "$STATE" = "OPEN" ]; then
+      ORPHAN=$((ORPHAN + 1))
+      ORPHAN_DETAILS="$ORPHAN_DETAILS\n    PR #$pr_num 已合并 → issue #$ISSUE_NUM 仍 OPEN"
+    fi
+  fi
+done <<< "$MERGED_PRS"
+
+if [ "$ORPHAN" -gt 0 ]; then
+  echo "FAIL: $ORPHAN 个已合并 PR 的关联 issue 未关闭:$ORPHAN_DETAILS"
+else
+  echo "PASS: 所有已合并 PR 的关联 issue 均已关闭"
+fi
+
 # git hook
 echo "--- git hook ---"
 [ -L .git/hooks/commit-msg ] && echo "PASS: commit-msg hook" || echo "FAIL: 无 commit-msg hook"
@@ -149,6 +186,7 @@ echo "--- git hook ---"
 | 直接推送到默认分支 | FAIL |
 | fix_round 超限 (≥3) | WARN |
 | 分支命名不规范 | WARN |
+| 已合并 PR 的关联 issue 未关闭 | FAIL |
 | 无 commit-msg git hook | FAIL |
 
 ---
